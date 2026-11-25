@@ -1,29 +1,57 @@
-# DeckyBird 🐦🎮
+<p align="center">
+  <img src="assets/logo.png" alt="DeckyBird" width="520">
+</p>
 
-Форк браузера [Ladybird](https://github.com/LadybirdBrowser/ladybird) для **Steam Deck / SteamOS** в формате **AppImage**, построенный по модульному принципу (по аналогии с DeckyWolf).
+<p align="center">
+  <b>Браузер на базе <a href="https://github.com/LadybirdBrowser/ladybird">Ladybird</a>, созданный специально для Steam Deck (SteamOS) и Linux-портативок.</b>
+</p>
 
-## Структура проекта
+<p align="center">
+  Разработан специально для сообщества <b>Decky Loader Россия</b> (<a href="https://deckyloader.ru">deckyloader.ru</a>).
+</p>
 
+---
+
+## Основные возможности
+
+- 🎮 **Полная поддержка SteamOS Game Mode и Desktop Mode**: чёткий рендеринг 1:1 без мыла в Gamescope с автоматическим определением нативного разрешения экрана (1280×800 на Steam Deck, 1080p/4K на внешних мониторах и ТВ).
+- 🕹️ **Управление с геймпада и трекпадов**: полноценная навигация без клавиатуры и мыши — правый стик управляет курсором, левый стик и трекпад отвечают за прокрутку, триггеры `R2`/`L2` за клики, `L1`/`R1` переключают вкладки, `B`/`X`/`Y` управляют историей и обновлением страниц.
+- 🧩 **Прямая интеграция с [deckyloader.ru](https://deckyloader.ru)**: установка, обновление и удаление плагинов Decky Loader прямо со страницы сайта в один клик.
+- 📥 **Встроенный торрент-клиент**: управление загрузками прямо в браузере с фоновым сервисом и плагином для Decky Loader, чтобы скачивание продолжалось даже при закрытом браузере или переключении игр.
+- 🛡️ **Сертификаты Минцифры**: встроенная поддержка российских корневых сертификатов с удобным переключателем на стартовой странице.
+- 🎨 **Адаптивная стартовая страница**: динамически подстраивается под тему браузера (тёмная/светлая) и выбранный акцентный цвет, синхронизирует поисковую систему с настройками браузера и содержит быстрые ссылки на сервисы для Steam Deck.
+- 🚫 **Встроенная блокировка рекламы и трекеров**: предустановленные списки фильтров (`EasyList`, `EasyPrivacy`, `EasyList Cookie`, `RU AdList`) с возможностью гибкой настройки.
+- 🇷🇺 **Русский интерфейс**: переведённые настройки, страницы браузера и контекстные меню.
+
+---
+
+## Установка и запуск
+
+Скачайте последний `DeckyBird.AppImage` со страницы релизов, сделайте его исполняемым и запустите:
+
+```bash
+chmod +x DeckyBird.AppImage
+./DeckyBird.AppImage
 ```
-DeckyBird/
-├── ladybird/                  # Чистый upstream-репозиторий Ladybird (не смешивается с нашими фичами)
-├── modules/                   # Изолированные модули DeckyBird
-│   ├── controller/            # Управление с геймпада (порт deckywolf-controller)
-│   ├── torrent/               # Торрент-клиент + плагин DeckyLoader
-│   ├── certs/                 # Сертификаты Минцифры (изолированный бандл через SSL_CERT_FILE)
-│   ├── startpage/             # Собственная стартовая страница (about:newtab)
-│   ├── defaults/              # Дефолтные настройки (Settings.json) и закладки (Bookmarks.json)
-│   └── decky-bridge/          # Модуль интеграции с deckyloader.ru и тонкими C++/WebUI хуками
-├── overlay/                   # Файлы для наложения в AppDir (AppRun, .desktop, иконки, бинарники)
-├── patches/                   # Минимальные патчи к upstream ladybird/ (только там, где нельзя иначе)
-├── scripts/                   # Скрипты обновления upstream, наложения модулей и сборки AppImage
-├── docker/                    # Контейнер Ubuntu 24.04 для сборки AppImage, совместимого со SteamOS
-└── docs/
-    └── ARCHITECTURE.md        # Архитектурный разбор, модульность и план адаптации фич
-```
 
-## Быстрый старт (следующие шаги)
+---
 
-1. Изучите [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — там разобрано устройство Ladybird, какие фичи подключаются без пересборки C++ (через `overlay/` и `AppRun`), а какие требуют тонкого C++-модуля.
-2. Для сборки под SteamOS потребуется Docker (сборка в `ubuntu:24.04` для совместимости GLIBC, так как на хосте GLIBC 2.44).
-3. Подробности по скриптам — в `scripts/`.
+## Сборка и обновления
+
+Инструкция по обновлению до новых версий Ladybird и сборке `DeckyBird.AppImage` находится в [Update/UPDATE_GUIDE.md](Update/UPDATE_GUIDE.md).
+
+---
+
+## ☕ Поддержка проекта
+
+Если вам нравится **DeckyBird** и вы хотите поддержать дальнейшее развитие проекта:
+
+<p align="center">
+  <a href="https://boosty.to/kowalski1997/donate">
+    <img src="https://img.shields.io/badge/Support_Author-Boosty-orange?style=for-the-badge&logo=boosty&logoColor=white" alt="Поддержать на Boosty" height="42">
+  </a>
+</p>
+
+<p align="center">
+  👉 <b><a href="https://boosty.to/kowalski1997/donate">Поддержать автора на Boosty (Donate)</a></b> 🧡
+</p>
