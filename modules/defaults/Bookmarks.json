@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "id": "deckybird-bmk-torrent",
+      "dateAdded": 1764000000000,
+      "lastModified": 1764000000000,
+      "type": "bookmark",
+      "url": "http://127.0.0.1:8404/",
+      "title": "TorrentWolf"
+    },
+    {
+      "id": "deckybird-bmk-deckyloader",
+      "dateAdded": 1764000000000,
+      "lastModified": 1764000000000,
+      "type": "bookmark",
+      "url": "https://deckyloader.ru/",
+      "title": "DeckyLoader"
+    },
+    {
+      "id": "deckybird-bmk-steam",
+      "dateAdded": 1764000000000,
+      "lastModified": 1764000000000,
+      "type": "bookmark",
+      "url": "https://store.steampowered.com/",
+      "title": "Steam Store"
+    },
+    {
+      "id": "deckybird-bmk-protondb",
+      "dateAdded": 1764000000000,
+      "lastModified": 1764000000000,
+      "type": "bookmark",
+      "url": "https://www.protondb.com/",
+      "title": "ProtonDB"
+    }
+  ]
+}

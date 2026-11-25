@@ -1,0 +1,50 @@
+{
+  "firstRunComplete": true,
+  "newTabPageURL": "about:newtab",
+  "restorePreviousSession": true,
+  "appearance": {
+    "showMenuBar": false,
+    "showBookmarksBar": "onHover",
+    "interfaceTheme": "dark",
+    "websiteColorScheme": "dark",
+    "colorTheme": "harbor"
+  },
+  "content": {
+    "defaultZoomLevelFactor": 1.0,
+    "enableForceDark": true
+  },
+  "tabs": {
+    "verticalTabsEnabled": false,
+    "everythingInSidebar": false
+  },
+  "browsingBehavior": {
+    "enableAutoscroll": true,
+    "enablePrimaryPaste": true
+  },
+  "searchEngine": {
+    "engine": "Yandex",
+    "suggestions": true
+  },
+  "globalPrivacyControl": true,
+  "crashReportSending": "never",
+  "backgroundNetworking": {
+    "enabled": true,
+    "features": {
+      "contentBlockerSubscriptionUpdates": true,
+      "updateChecks": false
+    }
+  },
+  "contentBlockers": {
+    "enabled": true,
+    "disabledSites": [],
+    "builtInLists": {
+      "easyList": true,
+      "easyPrivacy": true,
+      "easyListCookie": true,
+      "ruAdList": true
+    }
+  },
+  "configVariables": {
+    "ui.toolbar.show_feedback_button": false
+  }
+}

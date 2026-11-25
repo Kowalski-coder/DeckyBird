@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeckyBird — Новая вкладка</title>
+    <link rel="icon" type="image/png" href="resource://icons/48x48/app-browser.png" />
+    <style>
+        :root {
+            --bg: #0f141c;
+            --bg-top: #1b2838;
+            --surface: #18202c;
+            --surface-hover: #212c3d;
+            --surface-soft: rgba(24, 32, 44, 0.65);
+            --input-bg: #0f141c;
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #3b82f6;
+            --accent-2: #6366f1;
+            --accent-border: rgba(59, 130, 246, 0.45);
+            --text: #eef2f7;
+            --title-text: #ffffff;
+            --muted: #94a3b8;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+        html[data-theme="light"] {
+            --bg: #f1f5f9;
+            --bg-top: #dbeafe;
+            --surface: #ffffff;
+            --surface-hover: #f8fafc;
+            --surface-soft: rgba(255, 255, 255, 0.78);
+            --input-bg: #f1f5f9;
+            --border: rgba(15, 23, 42, 0.1);
+            --text: #0f172a;
+            --title-text: #0f172a;
+            --muted: #475569;
+            --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+            color-scheme: light;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html {
+            background-color: var(--bg);
+            color-scheme: dark;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            background: radial-gradient(circle at top center, var(--bg-top) 0%, var(--bg) 68%);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 20px;
+            transition: background 0.25s ease, color 0.2s ease;
+        }
+        .container {
+            width: 100%;
+            max-width: 880px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            flex-shrink: 0;
+        }
+        .brand h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--title-text);
+        }
+        .badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+        }
+        button.pill {
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        button.pill:hover {
+            background: var(--surface-hover);
+            border-color: var(--accent-border);
+            color: var(--text);
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+        .dot.off {
+            background: var(--amber);
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 12px;
+            box-shadow: var(--shadow);
+        }
+        .engine-badge {
+            background: var(--input-bg);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 16px;
+            padding: 8px 6px;
+            outline: none;
+        }
+        .search-box button {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 14px;
+        }
+        .card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 18px;
+            border-radius: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: var(--text);
+            box-shadow: var(--shadow);
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            background: var(--surface-hover);
+            border-color: var(--accent-border);
+        }
+        .card-logo {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; }
+        .card-desc { font-size: 12px; color: var(--muted); }
+        .hints {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+            justify-content: center;
+        }
+        .hints span strong { color: var(--text); }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div class="header">
+            <div class="brand">
+                <svg class="brand-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="DeckyBird Logo">
+                    <defs>
+                        <radialGradient id="db-circle" cx="35%" cy="30%" r="75%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="45%" stop-color="#9be7ff"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </radialGradient>
+                        <linearGradient id="db-arc" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#f8fafc"/>
+                            <stop offset="100%" stop-color="#cbd5e1"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M 224 44 A 212 212 0 0 1 224 468 L 224 402 A 146 146 0 0 0 224 110 Z" fill="url(#db-arc)"/>
+                    <circle cx="212" cy="256" r="118" fill="url(#db-circle)"/>
+                    <g transform="translate(212, 256) scale(0.28) translate(-512, -512)">
+                        <path fill="none" stroke="#141824" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"
+                            d="M512 512 L543.25 549.77 L574.05 585.96 L603.5 619.01 L631.15 647.34 L656.55 669.82 L679.04 685.11 L698.37 693.2 L714.11 693.2 L725.8 685.11 L733.44 669.82 L736.59 647.34 L735.69 619.01 L730.07 585.96 L720.41 549.77 L706.69 512 L689.16 474.23 L668.24 438.04 L644.19 404.99 L617.44 376.66 L588.89 354.18 L558.76 338.89 L527.74 330.8 L496.26 330.8 L465.24 338.89 L435.11 354.18 L406.56 376.66 L379.81 404.99 L355.76 438.04 L334.84 474.23 L317.31 512 L303.59 549.77 L293.93 585.96 L288.31 619.01 L287.41 647.34 L290.56 669.82 L298.2 685.11 L309.89 693.2 L325.63 693.2 L344.96 685.11 L367.45 669.82 L392.85 647.34 L420.5 619.01 L449.95 585.96 L480.75 549.77 L512 512 L543.25 474.23 L574.05 438.04 L603.5 404.99 L631.15 376.66 L656.55 354.18 L679.04 338.89 L698.37 330.8 L714.11 330.8 L725.8 338.89 L733.44 354.18 L736.59 376.66 L735.69 404.99 L730.07 438.04 L720.41 474.23 L706.69 512 L689.16 549.77 L668.24 585.96 L644.19 619.01 L617.44 647.34 L588.89 669.82 L558.76 685.11 L527.74 693.2 L496.26 693.2 L465.24 685.11 L435.11 669.82 L406.56 647.34 L379.81 619.01 L355.76 585.96 L334.84 549.77 L317.31 512 L303.59 474.23 L293.93 438.04 L288.31 404.99 L287.41 376.66 L290.56 354.18 L298.2 338.89 L309.89 330.8 L325.63 330.8 L344.96 338.89 L367.45 354.18 L392.85 376.66 L420.5 404.99 L449.95 438.04 L480.75 474.23Z"/>
+                    </g>
+                </svg>
+                <div>
+                    <h1>DeckyBird</h1>
+                </div>
+            </div>
+            <div class="badges">
+                <button type="button" class="pill" id="mincifryToggle" title="Нажмите для включения/отключения сертификатов Минцифры">
+                    <span class="dot" id="mincifryDot"></span>
+                    <span id="mincifryLabel">Минцифры: ВКЛ</span>
+                </button>
+            </div>
+        </div>
+
+        <form class="search-box" id="searchForm">
+            <span class="engine-badge" id="engineBadge">Yandex</span>
+            <input type="text" id="searchInput" placeholder="Поиск в Yandex или введите адрес..." autofocus />
+            <button type="submit">Найти</button>
+        </form>
+
+        <section class="grid">
+            <a class="card" href="http://127.0.0.1:8404/">
+                <img class="card-logo" src="resource://ladybird/about-pages/icons/torrentwolf.png" alt="TorrentWolf" />
+                <div class="card-title">TorrentWolf</div>
+                <div class="card-desc">Встроенный торрент-клиент и фоновые загрузки</div>
+            </a>
+            <a class="card" href="https://deckyloader.ru/">
+                <img class="card-logo" src="resource://ladybird/about-pages/icons/deckyloader.png" alt="DeckyLoader.ru" />
+                <div class="card-title">DeckyLoader.ru</div>
+                <div class="card-desc">Каталог плагинов для Steam Deck</div>
+            </a>
+            <a class="card" href="https://store.steampowered.com/">
+                <img class="card-logo" src="resource://ladybird/about-pages/icons/steam.png" alt="Steam Store" />
+                <div class="card-title">Steam Store</div>
+                <div class="card-desc">Магазин игр и скидок Steam</div>
+            </a>
+            <a class="card" href="https://www.protondb.com/">
+                <img class="card-logo" src="resource://ladybird/about-pages/icons/protondb.png" alt="ProtonDB" />
+                <div class="card-title">ProtonDB</div>
+                <div class="card-desc">Совместимость игр со Steam Deck</div>
+            </a>
+        </section>
+
+        <div class="hints">
+            <span><strong>Правый стик:</strong> курсор</span>
+            <span><strong>Левый стик / трекпад:</strong> прокрутка</span>
+            <span><strong>R2 / R3:</strong> ЛКМ</span>
+            <span><strong>L2:</strong> ПКМ</span>
+            <span><strong>L1 / R1:</strong> вкладки</span>
+            <span><strong>B / X:</strong> назад / вперёд</span>
+            <span><strong>Y:</strong> обновить</span>
+        </div>
+    </main>
+
+    <script>
+        const ACCENTS = {
+            neutral:  { darkTop: "#1f242d", lightTop: "#e2e8f0", a1: "#64748b", a2: "#475569", border: "rgba(148,163,184,0.45)" },
+            harbor:   { darkTop: "#1b2838", lightTop: "#dbeafe", a1: "#2f6fd6", a2: "#4f46e5", border: "rgba(47,111,214,0.5)" },
+            glacier:  { darkTop: "#122b36", lightTop: "#cffafe", a1: "#1798b8", a2: "#0284c7", border: "rgba(23,152,184,0.5)" },
+            lagoon:   { darkTop: "#112b28", lightTop: "#ccfbf1", a1: "#12957f", a2: "#0d9488", border: "rgba(18,149,127,0.5)" },
+            moss:     { darkTop: "#162b1c", lightTop: "#dcfce7", a1: "#3b8f3e", a2: "#16a34a", border: "rgba(59,143,62,0.5)" },
+            saffron:  { darkTop: "#2e240e", lightTop: "#fef3c7", a1: "#c99500", a2: "#d97706", border: "rgba(201,149,0,0.5)" },
+            copper:   { darkTop: "#311d12", lightTop: "#ffedd5", a1: "#d0631c", a2: "#ea580c", border: "rgba(208,99,28,0.5)" },
+            cherry:   { darkTop: "#33161e", lightTop: "#ffe4e6", a1: "#d1344b", a2: "#e11d48", border: "rgba(209,52,75,0.5)" },
+            blossom:  { darkTop: "#33172b", lightTop: "#fce7f3", a1: "#d2459a", a2: "#db2777", border: "rgba(210,69,154,0.5)" },
+            lavender: { darkTop: "#221b38", lightTop: "#ede9fe", a1: "#7563d4", a2: "#6d28d9", border: "rgba(117,99,212,0.5)" }
+        };
+
+        function applyAppearance(interfaceTheme, colorTheme) {
+            const root = document.documentElement;
+            let mode = interfaceTheme || "dark";
+            if (mode === "system") {
+                mode = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+            }
+            root.setAttribute("data-theme", mode === "light" ? "light" : "dark");
+
+            const pal = ACCENTS[colorTheme] || ACCENTS.harbor;
+            root.style.setProperty("--bg-top", mode === "light" ? pal.lightTop : pal.darkTop);
+            root.style.setProperty("--accent", pal.a1);
+            root.style.setProperty("--accent-2", pal.a2);
+            root.style.setProperty("--accent-border", pal.border);
+        }
+
+        try {
+            const cached = JSON.parse(localStorage.getItem("deckybird_appearance") || "null");
+            if (cached) applyAppearance(cached.interfaceTheme, cached.colorTheme);
+        } catch (_) {}
+
+        function syncAppearance() {
+            fetch("http://127.0.0.1:8406/api/appearance")
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.ok) {
+                        applyAppearance(d.interfaceTheme, d.colorTheme);
+                        try { localStorage.setItem("deckybird_appearance", JSON.stringify(d)); } catch (_) {}
+                    }
+                })
+                .catch(() => {});
+        }
+
+        let activeEngine = {
+            name: "Yandex",
+            url: "https://yandex.com/search/?text=%s"
+        };
+
+        const engineBadge = document.getElementById("engineBadge");
+        const searchInput = document.getElementById("searchInput");
+
+        function syncSearchEngine() {
+            fetch("http://127.0.0.1:8406/api/search-engine")
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.ok && d.name && d.url) {
+                        activeEngine = { name: d.name, url: d.url };
+                        engineBadge.textContent = d.name;
+                        searchInput.placeholder = "Поиск в " + d.name + " или введите адрес...";
+                    }
+                })
+                .catch(() => {});
+        }
+
+        function syncAll() {
+            syncAppearance();
+            syncSearchEngine();
+        }
+
+        syncAll();
+        window.addEventListener("focus", syncAll);
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") syncAll();
+        });
+
+        document.getElementById("searchForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const q = searchInput.value.trim();
+            if (!q) return;
+            if (/^https?:\/\//i.test(q) || /^about:/i.test(q)) {
+                window.location.href = q;
+            } else if (/^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(q) && !q.includes(" ")) {
+                window.location.href = "https://" + q;
+            } else {
+                const target = activeEngine.url.includes("%s")
+                    ? activeEngine.url.replace(/%s/g, encodeURIComponent(q))
+                    : activeEngine.url + encodeURIComponent(q);
+                window.location.href = target;
+            }
+        });
+
+        const btn = document.getElementById("mincifryToggle");
+        const dot = document.getElementById("mincifryDot");
+        const label = document.getElementById("mincifryLabel");
+
+        function renderMincifry(enabled, justChanged) {
+            if (enabled) {
+                dot.classList.remove("off");
+                label.textContent = justChanged ? "Минцифры: ВКЛ (перезапустите)" : "Минцифры: ВКЛ";
+            } else {
+                dot.classList.add("off");
+                label.textContent = justChanged ? "Минцифры: ВЫКЛ (перезапустите)" : "Минцифры: ВЫКЛ";
+            }
+        }
+
+        fetch("http://127.0.0.1:8406/api/mincifry/status")
+            .then(r => r.json())
+            .then(d => { if (d && typeof d.enabled === "boolean") renderMincifry(d.enabled, false); })
+            .catch(() => {});
+
+        btn.addEventListener("click", function () {
+            fetch("http://127.0.0.1:8406/api/mincifry/toggle", { method: "POST" })
+                .then(r => r.json())
+                .then(d => { if (d && typeof d.enabled === "boolean") renderMincifry(d.enabled, true); })
+                .catch(() => {});
+        });
+    </script>
+</body>
+</html>

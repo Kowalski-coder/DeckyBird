@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -u
+
+CURRENTDIR="$(dirname "$(readlink -f "$0")")"
+export PATH="${CURRENTDIR}/usr/bin:${CURRENTDIR}/usr/libexec:${PATH}"
+export LD_LIBRARY_PATH="${CURRENTDIR}/usr/lib:${LD_LIBRARY_PATH:-}"
+export QT_PLUGIN_PATH="${CURRENTDIR}/usr/Qt6/plugins"
+export XDG_DATA_DIRS="${CURRENTDIR}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
+# SteamOS Game Mode (Gamescope) compatibility & zero-blur 1:1 scaling
+IS_GAMESCOPE=0
+if [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ] || [ "${XDG_CURRENT_DESKTOP:-}" = "gamescope" ]; then
+    IS_GAMESCOPE=1
+    unset WAYLAND_DISPLAY
+    export QT_QPA_PLATFORM=xcb
+    export QT_IM_MODULE=simple
+    export XMODIFIERS="@im=none"
+    export QT_ENABLE_HIGHDPI_SCALING=0
+    export QT_AUTO_SCREEN_SCALE_FACTOR=0
+    export QT_SCALE_FACTOR=1
+    export QT_FONT_DPI=96
+fi
+
+# Register desktop entry & icon for SteamOS / KDE
+mkdir -p "${HOME}/.local/share/applications" "${HOME}/.local/share/icons/hicolor/128x128/apps" 2>/dev/null || true
+if [ -w "${HOME}/.local/share/applications" ] && [ -f "${CURRENTDIR}/net.deckybird.DeckyBird.desktop" ]; then
+    EXEC_TARGET="${APPIMAGE:-${CURRENTDIR}/AppRun}"
+    sed "s|^Exec=.*|Exec=\"${EXEC_TARGET}\" %u|" "${CURRENTDIR}/net.deckybird.DeckyBird.desktop" \
+        > "${HOME}/.local/share/applications/net.deckybird.DeckyBird.desktop" 2>/dev/null || true
+fi
+if [ -w "${HOME}/.local/share/icons/hicolor/128x128/apps" ] && [ -f "${CURRENTDIR}/deckybird.png" ]; then
+    cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/128x128/apps/deckybird.png" 2>/dev/null || true
+    cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/128x128/apps/org.ladybird.Ladybird.png" 2>/dev/null || true
+fi
+if [ -w "${HOME}/.local/share/icons/hicolor/256x256/apps" ] && [ -f "${CURRENTDIR}/deckybird.png" ]; then
+    cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/256x256/apps/deckybird.png" 2>/dev/null || true
+    cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/256x256/apps/org.ladybird.Ladybird.png" 2>/dev/null || true
+fi
+
+# Seed default Settings.json and Bookmarks.json on first run
+LADYBIRD_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/Ladybird/Profiles/default"
+mkdir -p "${LADYBIRD_CONFIG_DIR}"
+if [ ! -f "${LADYBIRD_CONFIG_DIR}/Settings.json" ] && [ -f "${CURRENTDIR}/usr/share/deckybird/defaults/Settings.json" ]; then
+    cp -f "${CURRENTDIR}/usr/share/deckybird/defaults/Settings.json" "${LADYBIRD_CONFIG_DIR}/Settings.json"
+fi
+if [ ! -f "${LADYBIRD_CONFIG_DIR}/Bookmarks.json" ] && [ -f "${CURRENTDIR}/usr/share/deckybird/defaults/Bookmarks.json" ]; then
+    cp -f "${CURRENTDIR}/usr/share/deckybird/defaults/Bookmarks.json" "${LADYBIRD_CONFIG_DIR}/Bookmarks.json"
+fi
+
+# In Gamescope (Game Mode), force window size to exact native display resolution (1:1 pixel mapping, zero blur)
+if [ "$IS_GAMESCOPE" = "1" ]; then
+    DETECTED_RES=$(xdpyinfo 2>/dev/null | awk '/dimensions:/ {print $2}')
+    if [ -n "$DETECTED_RES" ]; then
+        RES_W="${DETECTED_RES%x*}"
+        RES_H="${DETECTED_RES#*x}"
+    else
+        RES_W="${GAMESCOPE_WIDTH:-${STEAM_GAME_WIDTH:-1280}}"
+        RES_H="${GAMESCOPE_HEIGHT:-${STEAM_GAME_HEIGHT:-800}}"
+    fi
+    python3 -c "
+import json, os
+p = os.path.join('${LADYBIRD_CONFIG_DIR}', 'Settings.json')
+try:
+    with open(p, 'r', encoding='utf-8') as f:
+        d = json.load(f)
+except Exception:
+    d = {}
+d['window'] = {'position': {'x': 0, 'y': 0}, 'size': {'width': int('${RES_W}'), 'height': int('${RES_H}')}, 'maximized': True}
+d.setdefault('content', {})['defaultZoomLevelFactor'] = 1.0
+d.setdefault('configVariables', {})['ui.window.use_client_side_decorations'] = False
+with open(p, 'w', encoding='utf-8') as f:
+    json.dump(d, f)
+" 2>/dev/null || true
+fi
+
+# Russian Ministry of Digital Development (Mintsifry) TLS Certificates & DeckyBridge
+export DECKYBIRD_CERTS_DIR="${CURRENTDIR}/usr/share/deckybird/certs"
+if [ -x "${CURRENTDIR}/usr/bin/deckybird-bridge" ]; then
+    "${CURRENTDIR}/usr/bin/deckybird-bridge" --init-only >/dev/null 2>&1 || true
+fi
+if [ -f "${HOME}/.local/share/deckybird/cacert-bundle.pem" ]; then
+    export SSL_CERT_FILE="${HOME}/.local/share/deckybird/cacert-bundle.pem"
+fi
+
+# Start DeckyBridge selective proxy (deckyloader.ru integration + Mintsifry API)
+BRIDGE_PID=""
+if [ -x "${CURRENTDIR}/usr/bin/deckybird-bridge" ]; then
+    "${CURRENTDIR}/usr/bin/deckybird-bridge" >/dev/null 2>&1 &
+    BRIDGE_PID=$!
+    export HTTPS_PROXY="http://127.0.0.1:8405"
+    export HTTP_PROXY="http://127.0.0.1:8405"
+    export NO_PROXY="localhost,127.0.0.1"
+fi
+
+# Install/update TorrentWolf plugin resources & background torrent service
+if [ -d "${CURRENTDIR}/usr/share/deckywolf" ]; then
+    mkdir -p "${HOME}/.local/share/deckywolf"
+    cp -rn "${CURRENTDIR}/usr/share/deckywolf"/* "${HOME}/.local/share/deckywolf/" 2>/dev/null || true
+fi
+
+if [ -x "${CURRENTDIR}/usr/bin/deckybird-torrent-service" ]; then
+    mkdir -p "${HOME}/.local/bin"
+    cp -f "${CURRENTDIR}/usr/bin/deckybird-torrent-service" "${HOME}/.local/bin/deckybird-torrent-service"
+    chmod +x "${HOME}/.local/bin/deckybird-torrent-service"
+
+    if command -v systemctl >/dev/null 2>&1; then
+        # Avoid port 8404 conflict if deckywolf-torrent.service is already running
+        if ! systemctl --user is-active --quiet deckywolf-torrent.service 2>/dev/null; then
+            mkdir -p "${HOME}/.config/systemd/user"
+            cat << 'EOF' > "${HOME}/.config/systemd/user/deckybird-torrent.service"
+[Unit]
+Description=DeckyBird Torrent & Decky Bridge Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/deckybird-torrent-service
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
+EOF
+            systemctl --user daemon-reload 2>/dev/null || true
+            systemctl --user enable --now deckybird-torrent.service 2>/dev/null || true
+        fi
+    fi
+fi
+
+# Start background gamepad controller daemon
+CONTROLLER_PID=""
+if [ -x "${CURRENTDIR}/usr/bin/deckybird-controller" ] && ! pgrep -f "decky.*-controller" >/dev/null 2>&1; then
+    "${CURRENTDIR}/usr/bin/deckybird-controller" >/dev/null 2>&1 &
+    CONTROLLER_PID=$!
+fi
+
+cleanup() {
+    if [ -n "$CONTROLLER_PID" ]; then
+        kill "$CONTROLLER_PID" 2>/dev/null || true
+    fi
+    if [ -n "$BRIDGE_PID" ]; then
+        kill "$BRIDGE_PID" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT INT TERM
+
+LADYBIRD_ARGS=()
+if [ -f "${HOME}/.local/share/deckybird/cacert-bundle.pem" ]; then
+    LADYBIRD_ARGS+=(--certificate "${HOME}/.local/share/deckybird/cacert-bundle.pem")
+fi
+
+# Russian UI translation hook for Qt menus (via LD_PRELOAD)
+if [ "${DECKYBIRD_NO_I18N:-0}" != "1" ] && [ -f "${CURRENTDIR}/usr/lib/deckybird-i18n.so" ]; then
+    cp -f "${CURRENTDIR}/usr/lib/deckybird-i18n.so" /tmp/deckybird-i18n.so 2>/dev/null || true
+    if [ -f /tmp/deckybird-i18n.so ]; then
+        export LD_PRELOAD="/tmp/deckybird-i18n.so${LD_PRELOAD:+:${LD_PRELOAD}}"
+    fi
+fi
+
+"${CURRENTDIR}/usr/bin/Ladybird" "${LADYBIRD_ARGS[@]}" "$@"

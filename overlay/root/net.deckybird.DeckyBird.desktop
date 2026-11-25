@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DeckyBird
+Comment=Ladybird-based browser tailored for SteamOS & Steam Deck
+Exec=AppRun %u
+Icon=deckybird
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=Ladybird
+Terminal=false

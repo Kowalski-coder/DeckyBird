@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="db-circle" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#9be7ff"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </radialGradient>
+    <linearGradient id="db-arc" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#dbe2ea"/>
+    </linearGradient>
+    <filter id="db-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- White Steam Deck semicircle arc on the right -->
+  <path
+    d="M 224 44 A 212 212 0 0 1 224 468 L 224 402 A 146 146 0 0 0 224 110 Z"
+    fill="url(#db-arc)"
+    filter="url(#db-shadow)"
+  />
+
+  <!-- Gradient circle on the left -->
+  <circle cx="212" cy="256" r="118" fill="url(#db-circle)" filter="url(#db-shadow)"/>
+
+  <!-- Ladybird emblem centered inside the circle (scaled from 1024x1024 around 512,512) -->
+  <g transform="translate(212, 256) scale(0.28) translate(-512, -512)">
+    <path
+      fill="none"
+      stroke="#141824"
+      stroke-width="44"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M512 512 L543.25 549.77 L574.05 585.96 L603.5 619.01 L631.15 647.34 L656.55 669.82 L679.04 685.11 L698.37 693.2 L714.11 693.2 L725.8 685.11 L733.44 669.82 L736.59 647.34 L735.69 619.01 L730.07 585.96 L720.41 549.77 L706.69 512 L689.16 474.23 L668.24 438.04 L644.19 404.99 L617.44 376.66 L588.89 354.18 L558.76 338.89 L527.74 330.8 L496.26 330.8 L465.24 338.89 L435.11 354.18 L406.56 376.66 L379.81 404.99 L355.76 438.04 L334.84 474.23 L317.31 512 L303.59 549.77 L293.93 585.96 L288.31 619.01 L287.41 647.34 L290.56 669.82 L298.2 685.11 L309.89 693.2 L325.63 693.2 L344.96 685.11 L367.45 669.82 L392.85 647.34 L420.5 619.01 L449.95 585.96 L480.75 549.77 L512 512 L543.25 474.23 L574.05 438.04 L603.5 404.99 L631.15 376.66 L656.55 354.18 L679.04 338.89 L698.37 330.8 L714.11 330.8 L725.8 338.89 L733.44 354.18 L736.59 376.66 L735.69 404.99 L730.07 438.04 L720.41 474.23 L706.69 512 L689.16 549.77 L668.24 585.96 L644.19 619.01 L617.44 647.34 L588.89 669.82 L558.76 685.11 L527.74 693.2 L496.26 693.2 L465.24 685.11 L435.11 669.82 L406.56 647.34 L379.81 619.01 L355.76 585.96 L334.84 549.77 L317.31 512 L303.59 474.23 L293.93 438.04 L288.31 404.99 L287.41 376.66 L290.56 354.18 L298.2 338.89 L309.89 330.8 L325.63 330.8 L344.96 338.89 L367.45 354.18 L392.85 376.66 L420.5 404.99 L449.95 438.04 L480.75 474.23Z"
+    />
+  </g>
+</svg>

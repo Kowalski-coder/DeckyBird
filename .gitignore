@@ -1,0 +1,28 @@
+# Build & temp artifacts
+ladybird/
+build/
+out/
+dist/
+tmp/
+*.AppImage
+*.appimage
+*.tar.xz
+*.zsync
+*.deb
+
+# Local Steam artwork (not pushed to repo)
+ForSteamUI/
+
+# Update workspace binaries (keep scripts & guide)
+Update/Original/*
+!Update/Original/.gitkeep
+Update/DeckyBird/*
+!Update/DeckyBird/.gitkeep
+
+# IDE & OS & Python cache
+__pycache__/
+*.pyc
+.DS_Store
+*.swp
+.vscode/
+.idea/
