@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Расширения — DeckyBird</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top center, #1b2838 0%, #0f141c 70%);
+      color: #e5e7eb;
+      padding: 28px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .wrap { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 20px; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      background: #161920; border: 1px solid #282f3d; border-radius: 16px; padding: 18px 20px;
+    }
+    .title-group h1 { font-size: 20px; font-weight: 700; color: #f9fafb; }
+    .title-group p { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+    .toggle {
+      position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600;
+    }
+    .toggle input { display: none; }
+    .slider {
+      width: 44px; height: 24px; background: #334155; border-radius: 999px; position: relative; transition: 0.2s;
+    }
+    .slider::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+      background: #fff; border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .slider { background: #00acff; }
+    .toggle input:checked + .slider::after { transform: translateX(20px); }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+    .ext-card {
+      background: #161920; border: 1px solid #282f3d; border-radius: 14px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ext-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .ext-name { font-size: 15px; font-weight: 700; color: #f9fafb; }
+    .ext-meta { font-size: 11px; color: #00acff; margin-top: 2px; }
+    .ext-desc { font-size: 12px; color: #9ca3af; line-height: 1.4; }
+    .ext-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #232936; }
+    .stat-badge { font-size: 11px; color: #93c5fd; background: rgba(0, 172, 255, 0.1); padding: 4px 9px; border-radius: 999px; }
+    .btn {
+      border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+      background: #283142; color: #e5e7eb; transition: 0.15s;
+    }
+    .btn:hover { background: #333e54; }
+    .btn-primary { background: #00acff; color: #fff; }
+    .btn-primary:hover { background: #0095de; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .install-box {
+      background: #161920; border: 1px solid #282f3d; border-radius: 14px; padding: 18px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .install-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .install-row input[type="text"] {
+      flex: 1; min-width: 240px; background: #202633; border: 1px solid #333d4f; border-radius: 8px;
+      padding: 10px 12px; color: #f3f4f6; font-size: 13px; outline: none;
+    }
+    .install-row input[type="text"]:focus { border-color: #00acff; }
+    .status-msg { font-size: 12px; color: #93c5fd; display: none; }
+    .status-msg.err { color: #fca5a5; }
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+    }
+    .modal {
+      width: 100%; max-width: 480px; background: #161920; border: 1px solid #333d4f; border-radius: 14px; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 16px; color: #f9fafb; }
+    textarea {
+      width: 100%; min-height: 130px; background: #202633; border: 1px solid #333d4f; border-radius: 8px;
+      padding: 10px; color: #f3f4f6; font-family: monospace; font-size: 12px; resize: vertical;
+    }
+    .pb-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #232936; font-size: 12px; }
+    .pb-row select { background: #202633; color: #e5e7eb; border: 1px solid #333d4f; border-radius: 6px; padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title-group">
+        <h1>Расширения DeckyBird (бета)</h1>
+        <p>Встроенные модули приватности, перевод видео и установка .crx / .xpi / .user.js</p>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="mitm-toggle">
+        <span class="slider"></span>
+        <span id="mitm-label">Активно</span>
+      </label>
+    </div>
+
+    <div class="section-title">Встроенные расширения</div>
+    <div class="grid" id="builtins-grid"></div>
+
+    <div class="section-title">Установить из Chrome Web Store / Firefox Add-ons / Userscript</div>
+    <div class="install-box">
+      <div class="install-row">
+        <input type="text" id="install-url" placeholder="Вставьте ссылку Chrome Web Store, addons.mozilla.org, .user.js или ID...">
+        <button class="btn btn-primary" id="btn-install-url">Установить</button>
+        <button class="btn" id="btn-upload-file">Загрузить файл (.crx / .xpi / .user.js)</button>
+        <input type="file" id="file-upload" accept=".crx,.xpi,.zip,.js" style="display:none">
+      </div>
+      <div class="status-msg" id="install-status"></div>
+    </div>
+
+    <div class="section-title">Установленные расширения</div>
+    <div class="grid" id="custom-grid"></div>
+  </div>
+
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal" id="modal-body"></div>
+  </div>
+
+  <script>
+    const builtinsGrid = document.getElementById("builtins-grid");
+    const customGrid = document.getElementById("custom-grid");
+    const mitmToggle = document.getElementById("mitm-toggle");
+    const mitmLabel = document.getElementById("mitm-label");
+    const installUrl = document.getElementById("install-url");
+    const btnInstallUrl = document.getElementById("btn-install-url");
+    const btnUploadFile = document.getElementById("btn-upload-file");
+    const fileUpload = document.getElementById("file-upload");
+    const installStatus = document.getElementById("install-status");
+    const modalBg = document.getElementById("modal-bg");
+    const modalBody = document.getElementById("modal-body");
+
+    let currentState = null;
+
+    function showStatus(msg, isErr = false) {
+      installStatus.textContent = msg;
+      installStatus.classList.toggle("err", isErr);
+      installStatus.style.display = "block";
+    }
+
+    async function loadState() {
+      const res = await fetch("/api/ext/state");
+      currentState = await res.json();
+      mitmToggle.checked = !!currentState.mitm_enabled;
+      mitmLabel.textContent = currentState.mitm_enabled ? "Движок включён" : "Движок выключен";
+      render();
+    }
+
+    mitmToggle.addEventListener("change", async () => {
+      await fetch("/api/ext/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "__mitm__", enabled: mitmToggle.checked })
+      });
+      loadState();
+    });
+
+    function render() {
+      builtinsGrid.innerHTML = "";
+      const bOrder = ["vot", "ublock", "decentraleyes", "ghostprint", "privacy-badger"];
+      for (const id of bOrder) {
+        const ext = currentState.builtins[id];
+        if (!ext) continue;
+        let stat = "Готов к работе";
+        if (id === "ublock") stat = `Заблокировано: ${ext.blocked_count || 0}`;
+        if (id === "decentraleyes") stat = `Локальных кэш-хитов: ${ext.hits || 0}`;
+        if (id === "privacy-badger") stat = `Трекеров: ${Object.keys(ext.domains || {}).length} (блок: ${ext.blocked_count || 0})`;
+        if (id === "ghostprint") stat = "Защита отпечатка";
+        if (id === "vot") stat = "Видео-перевод активен";
+
+        const card = document.createElement("div");
+        card.className = "ext-card";
+        card.innerHTML = `
+          <div class="ext-head">
+            <div>
+              <div class="ext-name">${ext.name}</div>
+              <div class="ext-meta">Встроенное • v${ext.version}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" ${ext.enabled ? "checked" : ""}>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="ext-desc">${ext.description}</div>
+          <div class="ext-foot">
+            <span class="stat-badge">${stat}</span>
+            ${["ublock", "ghostprint", "privacy-badger"].includes(id) ? '<button class="btn btn-cfg">Настройки</button>' : ""}
+          </div>
+        `;
+        card.querySelector("input").addEventListener("change", async (e) => {
+          await fetch("/api/ext/toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, enabled: e.target.checked })
+          });
+          loadState();
+        });
+        const cfgBtn = card.querySelector(".btn-cfg");
+        if (cfgBtn) cfgBtn.addEventListener("click", () => openBuiltinSettings(id, ext));
+        builtinsGrid.appendChild(card);
+      }
+
+      customGrid.innerHTML = "";
+      const customs = Object.values(currentState.custom || {});
+      if (!customs.length) {
+        customGrid.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Нет дополнительно установленных расширений.</div>';
+        return;
+      }
+      for (const ext of customs) {
+        const card = document.createElement("div");
+        card.className = "ext-card";
+        const popupBtn = ext.popup_path
+          ? `<a class="btn btn-primary" href="/ext-res/${encodeURIComponent(ext.id)}/${ext.popup_path.replace(/^\/+/, "")}" target="_blank" style="text-decoration:none;">Popup</a>`
+          : "";
+        card.innerHTML = `
+          <div class="ext-head">
+            <div>
+              <div class="ext-name"></div>
+              <div class="ext-meta">${ext.source.toUpperCase()} • v${ext.version}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" ${ext.enabled ? "checked" : ""}>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="ext-desc"></div>
+          <div class="ext-foot">
+            <div style="display:flex;gap:6px;">${popupBtn}</div>
+            <button class="btn btn-danger">Удалить</button>
+          </div>
+        `;
+        card.querySelector(".ext-name").textContent = ext.name;
+        card.querySelector(".ext-desc").textContent = ext.description || "Пользовательское расширение";
+        card.querySelector("input").addEventListener("change", async (e) => {
+          await fetch("/api/ext/toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: ext.id, enabled: e.target.checked })
+          });
+          loadState();
+        });
+        card.querySelector(".btn-danger").addEventListener("click", async () => {
+          await fetch("/api/ext/remove", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: ext.id })
+          });
+          loadState();
+        });
+        customGrid.appendChild(card);
+      }
+    }
+
+    function openBuiltinSettings(id, ext) {
+      modalBody.innerHTML = "";
+      const title = document.createElement("h2");
+      title.textContent = `Настройки: ${ext.name}`;
+      modalBody.appendChild(title);
+
+      if (id === "ublock") {
+        const p = document.createElement("p");
+        p.style.cssText = "font-size:12px;color:#94a3b8;";
+        p.textContent = "Дополнительные домены для блокировки (по одному на строку):";
+        const ta = document.createElement("textarea");
+        ta.value = (ext.custom_rules || []).join("\n");
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "btn btn-primary";
+        saveBtn.textContent = "Сохранить";
+        saveBtn.onclick = async () => {
+          await fetch("/api/ext/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, custom_rules: ta.value.split("\n") })
+          });
+          modalBg.style.display = "none";
+          loadState();
+        };
+        modalBody.append(p, ta, saveBtn);
+      } else if (id === "ghostprint") {
+        const cfg = Object.assign({}, ext.config || {});
+        const labels = {
+          canvas: "Подмена Canvas 2D",
+          webgl: "Подмена WebGL (Vendor / Renderer)",
+          audio: "Шум AudioContext",
+          navigator: "Нормализация Navigator (CPU/RAM)",
+          webrtc: "Защита WebRTC от утечки IP",
+        };
+        for (const [k, label] of Object.entries(labels)) {
+          const row = document.createElement("label");
+          row.className = "pb-row";
+          row.innerHTML = `<span>${label}</span><input type="checkbox" ${cfg[k] ? "checked" : ""}>`;
+          row.querySelector("input").onchange = (e) => { cfg[k] = e.target.checked; };
+          modalBody.appendChild(row);
+        }
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "btn btn-primary";
+        saveBtn.textContent = "Сохранить";
+        saveBtn.onclick = async () => {
+          await fetch("/api/ext/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, config: cfg })
+          });
+          modalBg.style.display = "none";
+          loadState();
+        };
+        modalBody.appendChild(saveBtn);
+      } else if (id === "privacy-badger") {
+        const domains = ext.domains || {};
+        const entries = Object.entries(domains);
+        if (!entries.length) {
+          const p = document.createElement("p");
+          p.style.cssText = "font-size:12px;color:#94a3b8;";
+          p.textContent = "Трекеры пока не обнаружены. Посетите сайты для автоматического обучения.";
+          modalBody.appendChild(p);
+        } else {
+          for (const [dom, act] of entries) {
+            const row = document.createElement("div");
+            row.className = "pb-row";
+            row.innerHTML = `<span>${dom}</span><select>
+              <option value="block" ${act === "block" ? "selected" : ""}>Блокировать</option>
+              <option value="cookieblock" ${act === "cookieblock" ? "selected" : ""}>Блок cookies</option>
+              <option value="allow" ${act === "allow" ? "selected" : ""}>Разрешить</option>
+            </select>`;
+            row.querySelector("select").onchange = async (e) => {
+              await fetch("/api/ext/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, domain: dom, action: e.target.value })
+              });
+              loadState();
+            };
+            modalBody.appendChild(row);
+          }
+        }
+      }
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "btn";
+      closeBtn.textContent = "Закрыть";
+      closeBtn.onclick = () => { modalBg.style.display = "none"; };
+      modalBody.appendChild(closeBtn);
+      modalBg.style.display = "flex";
+    }
+
+    modalBg.addEventListener("click", (e) => {
+      if (e.target === modalBg) modalBg.style.display = "none";
+    });
+
+    btnInstallUrl.addEventListener("click", async () => {
+      const val = installUrl.value.trim();
+      if (!val) return;
+      showStatus("Скачивание и установка...");
+      btnInstallUrl.disabled = true;
+      try {
+        const res = await fetch("/api/ext/install-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: val })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showStatus(`Установлено: ${data.extension.name}`);
+          installUrl.value = "";
+          loadState();
+        } else {
+          showStatus(data.error || "Ошибка установки", true);
+        }
+      } catch (e) {
+        showStatus("Ошибка: " + e.message, true);
+      } finally {
+        btnInstallUrl.disabled = false;
+      }
+    });
+
+    btnUploadFile.addEventListener("click", () => fileUpload.click());
+    fileUpload.addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      showStatus("Установка файла...");
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const b64 = ev.target.result.split(",")[1];
+        const res = await fetch("/api/ext/install-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: f.name, data_b64: b64 })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showStatus(`Установлено: ${data.extension.name}`);
+          loadState();
+        } else {
+          showStatus(data.error || "Ошибка установки", true);
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+
+    loadState();
+  </script>
+</body>
+</html>

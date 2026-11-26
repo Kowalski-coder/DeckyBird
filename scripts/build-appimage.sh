@@ -106,6 +106,25 @@ if [ -f "$ROOT_DIR/modules/decky-bridge/decky_page_script.js" ]; then
     cp -f "$ROOT_DIR/modules/decky-bridge/decky_page_script.js" "$APPDIR/usr/share/deckybird/decky_page_script.js"
 fi
 
+if [ -d "$ROOT_DIR/modules/webapps" ]; then
+    mkdir -p "$APPDIR/usr/share/deckybird/webapps"
+    cp -af "$ROOT_DIR/modules/webapps"/* "$APPDIR/usr/share/deckybird/webapps/"
+    if [ -f "$ROOT_DIR/modules/webapps/deckybird_webapp_manager.py" ]; then
+        cp -f "$ROOT_DIR/modules/webapps/deckybird_webapp_manager.py" "$APPDIR/usr/bin/deckybird-webapp-manager"
+        chmod +x "$APPDIR/usr/bin/deckybird-webapp-manager"
+    fi
+fi
+
+if [ -d "$ROOT_DIR/modules/extensions" ]; then
+    mkdir -p "$APPDIR/usr/share/deckybird/extensions"
+    cp -af "$ROOT_DIR/modules/extensions"/* "$APPDIR/usr/share/deckybird/extensions/"
+fi
+
+if [ -f "$ROOT_DIR/modules/ui-hook/deckybird-ui-hook.so" ]; then
+    mkdir -p "$APPDIR/usr/lib"
+    cp -f "$ROOT_DIR/modules/ui-hook/deckybird-ui-hook.so" "$APPDIR/usr/lib/deckybird-ui-hook.so"
+fi
+
 if [ -d "$ROOT_DIR/modules/certs" ]; then
     cp -f "$ROOT_DIR/modules/certs"/*.crt "$APPDIR/usr/share/deckybird/certs/" 2>/dev/null || true
 fi

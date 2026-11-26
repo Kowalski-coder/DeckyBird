@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Веб-приложения — DeckyBird</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+    }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top center, #1b2838 0%, #0f141c 70%);
+      color: #e5e7eb;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background-color: #161920;
+      border: 1px solid #282f3d;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+    .container { padding: 20px; }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #282f3d;
+      margin-bottom: 16px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #00acff 0%, #0077cc 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 172, 255, 0.25);
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .header-title h1 { font-size: 16px; font-weight: 700; color: #f9fafb; letter-spacing: -0.2px; }
+    .subtitle { font-size: 11px; color: #00acff; font-weight: 500; }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: #1b202c;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #283142;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active { background: #00acff; color: #fff; }
+    .icon-preview-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .icon-container {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      min-width: 56px;
+      border-radius: 12px;
+      background: #202633;
+      border: 1px solid #333d4f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .icon-container:hover { border-color: #00acff; }
+    .icon-container:hover .icon-overlay { opacity: 1; }
+    .icon-container img { width: 38px; height: 38px; object-fit: contain; }
+    .icon-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .icon-overlay span {
+      font-size: 9px;
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .icon-info { flex: 1; }
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      background: #202633;
+      border: 1px solid #333d4f;
+      border-radius: 8px;
+      padding: 9px 11px;
+      color: #f3f4f6;
+      font-size: 13px;
+      outline: none;
+      user-select: text;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input[type="text"]:focus, input[type="url"]:focus {
+      border-color: #00acff;
+      box-shadow: 0 0 0 2px rgba(0, 172, 255, 0.2);
+    }
+    .form-group { margin-bottom: 14px; }
+    .options-group {
+      background: #1b202c;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #283142;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+    .checkbox-row input[type="checkbox"] { display: none; }
+    .checkbox-custom {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      border-radius: 5px;
+      background: #272f3e;
+      border: 1.5px solid #435169;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      transition: all 0.15s ease;
+    }
+    .checkbox-row input[type="checkbox"]:checked + .checkbox-custom {
+      background: #00acff;
+      border-color: #00acff;
+    }
+    .checkbox-row input[type="checkbox"]:checked + .checkbox-custom::after {
+      content: "";
+      width: 4px;
+      height: 8px;
+      border: solid #ffffff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      margin-bottom: 2px;
+    }
+    .checkbox-label strong { display: block; font-size: 12px; color: #f3f4f6; font-weight: 600; }
+    .checkbox-label small { display: block; font-size: 10px; color: #94a3b8; margin-top: 1px; }
+    .info-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 172, 255, 0.08);
+      border-left: 3px solid #00acff;
+      padding: 8px 10px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      color: #93c5fd;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .btn-primary {
+      width: 100%;
+      background: #00acff;
+      color: #ffffff;
+      border: none;
+      border-radius: 9px;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 4px 12px rgba(0, 172, 255, 0.3);
+    }
+    .btn-primary:hover { background: #0095de; }
+    .btn-primary:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
+    .btn-secondary {
+      width: 100%;
+      background: #283142;
+      color: #e5e7eb;
+      border: 1px solid #3c485e;
+      border-radius: 9px;
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #333e54; }
+    .error-box {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 7px;
+      color: #fca5a5;
+      font-size: 11px;
+    }
+    .success-view { text-align: center; padding: 14px 8px 8px; }
+    .success-icon { margin-bottom: 12px; }
+    .success-view h2 { font-size: 17px; color: #f9fafb; margin-bottom: 6px; }
+    .success-view p { font-size: 12px; color: #9ca3af; margin-bottom: 16px; line-height: 1.4; }
+    .success-actions { display: flex; flex-direction: column; gap: 8px; }
+    .app-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+    .app-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1b202c;
+      border: 1px solid #283142;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .app-item img { width: 32px; height: 32px; border-radius: 7px; object-fit: contain; background: #202633; }
+    .app-item-info { flex: 1; min-width: 0; }
+    .app-item-name { font-weight: 600; font-size: 13px; color: #f3f4f6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .app-item-url { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .app-item-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-launch { background: #00acff; color: #fff; }
+    .btn-delete { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .empty-state { text-align: center; color: #94a3b8; padding: 28px 12px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="container">
+      <div class="header">
+        <div class="header-left">
+          <div class="header-logo">D</div>
+          <div class="header-title">
+            <h1>Веб-приложение</h1>
+            <span class="subtitle">Интеграция DeckyBird</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-create">Создать</button>
+        <button class="tab-btn" id="tab-list">Мои приложения</button>
+      </div>
+
+      <div id="form-section" class="section">
+        <div class="icon-preview-row">
+          <div class="icon-container" id="icon-container" title="Нажмите, чтобы загрузить свою иконку">
+            <img id="icon-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2300acff'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='28' font-family='sans-serif' font-weight='bold'%3EW%3C/text%3E%3C/svg%3E" alt="Site Icon">
+            <div class="icon-overlay"><span>Изменить</span></div>
+            <input type="file" id="file-input" accept="image/*" style="display:none">
+          </div>
+          <div class="icon-info">
+            <label class="field-label" for="app-name">Название</label>
+            <input type="text" id="app-name" placeholder="Название сайта" autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="app-url">URL-адрес сайта</label>
+          <input type="url" id="app-url" placeholder="https://...">
+        </div>
+
+        <div class="options-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="check-kde" checked>
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-label">
+              <strong>Меню приложений KDE</strong>
+              <small>Категория «Веб-приложения»</small>
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="check-steam" checked>
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-label">
+              <strong>Библиотека Steam</strong>
+              <small>Игровой режим (Раздел «Сторонние»)</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="info-note">
+          <span>Открывается без адресной строки и вкладок в нативном разрешении экрана с изолированным профилем.</span>
+        </div>
+
+        <button id="btn-create" class="btn-primary">
+          <span>+ Создать веб-приложение</span>
+        </button>
+
+        <div id="error-box" class="error-box" style="display:none"></div>
+      </div>
+
+      <div id="success-section" class="section success-view" style="display:none">
+        <div class="success-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h2>Готово!</h2>
+        <p id="success-desc">Веб-приложение успешно добавлено в меню KDE и Steam.</p>
+        <div class="success-actions">
+          <button id="btn-launch-now" class="btn-primary">Запустить сейчас</button>
+          <button id="btn-create-another" class="btn-secondary">Создать ещё одно</button>
+        </div>
+      </div>
+
+      <div id="list-section" class="section" style="display:none">
+        <div id="app-list" class="app-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const nameInput = document.getElementById("app-name");
+    const urlInput = document.getElementById("app-url");
+    const iconPreview = document.getElementById("icon-preview");
+    const iconContainer = document.getElementById("icon-container");
+    const fileInput = document.getElementById("file-input");
+    const checkKde = document.getElementById("check-kde");
+    const checkSteam = document.getElementById("check-steam");
+    const btnCreate = document.getElementById("btn-create");
+    const errorBox = document.getElementById("error-box");
+
+    const formSection = document.getElementById("form-section");
+    const successSection = document.getElementById("success-section");
+    const listSection = document.getElementById("list-section");
+    const successDesc = document.getElementById("success-desc");
+    const btnLaunchNow = document.getElementById("btn-launch-now");
+    const btnCreateAnother = document.getElementById("btn-create-another");
+    const tabCreate = document.getElementById("tab-create");
+    const tabList = document.getElementById("tab-list");
+    const appList = document.getElementById("app-list");
+
+    let customIconB64 = null;
+    let createdAppId = null;
+
+    function cleanTitle(title) {
+      return (title || "").replace(/\s*[-–—|]\s*(DeckyBird|Ladybird).*$/i, "").trim();
+    }
+
+    function updateFaviconForUrl(rawUrl) {
+      if (customIconB64) return;
+      try {
+        const u = new URL(rawUrl.startsWith("http") ? rawUrl : "https://" + rawUrl);
+        if (u.hostname && u.hostname !== "127.0.0.1" && u.hostname !== "localhost") {
+          iconPreview.src = `/api/webapps/favicon?domain=${encodeURIComponent(u.hostname)}`;
+        }
+      } catch (_) {}
+    }
+
+    if (params.get("url")) {
+      urlInput.value = params.get("url");
+      updateFaviconForUrl(urlInput.value);
+    }
+    if (params.get("title")) {
+      nameInput.value = cleanTitle(params.get("title"));
+    }
+
+    urlInput.addEventListener("blur", () => updateFaviconForUrl(urlInput.value));
+
+    iconContainer.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        customIconB64 = ev.target.result;
+        iconPreview.src = customIconB64;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function switchTab(tab) {
+      tabCreate.classList.toggle("active", tab === "create");
+      tabList.classList.toggle("active", tab === "list");
+      formSection.style.display = tab === "create" ? "block" : "none";
+      successSection.style.display = "none";
+      listSection.style.display = tab === "list" ? "block" : "none";
+      if (tab === "list") loadWebApps();
+    }
+
+    tabCreate.addEventListener("click", () => switchTab("create"));
+    tabList.addEventListener("click", () => switchTab("list"));
+    if (params.get("tab") === "list") switchTab("list");
+
+    btnCreate.addEventListener("click", async () => {
+      errorBox.style.display = "none";
+      const name = nameInput.value.trim();
+      const url = urlInput.value.trim();
+      if (!name) {
+        errorBox.textContent = "Пожалуйста, укажите название веб-приложения.";
+        errorBox.style.display = "block";
+        return;
+      }
+      if (!url) {
+        errorBox.textContent = "Пожалуйста, укажите URL-адрес.";
+        errorBox.style.display = "block";
+        return;
+      }
+      btnCreate.disabled = true;
+      btnCreate.textContent = "Создание...";
+      try {
+        const res = await fetch("/api/webapps/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            url,
+            icon_b64: customIconB64,
+            add_kde: checkKde.checked,
+            add_steam: checkSteam.checked
+          })
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+          createdAppId = data.id;
+          formSection.style.display = "none";
+          successSection.style.display = "block";
+          const where = [];
+          if (data.kde_added) where.push("в меню KDE («Веб-приложения»)");
+          if (data.steam_added) where.push("в Steam (раздел «Сторонние»)");
+          successDesc.textContent = where.length
+            ? `Веб-приложение «${data.name}» добавлено ${where.join(" и ")}.`
+            : `Веб-приложение «${data.name}» успешно создано.`;
+          if (data.kde_error) {
+            successDesc.textContent += ` (Меню KDE: нет прав на ~/.local/share/applications — ${data.kde_error})`;
+          }
+        } else {
+          errorBox.textContent = (data && data.error) || "Не удалось создать веб-приложение.";
+          errorBox.style.display = "block";
+        }
+      } catch (e) {
+        errorBox.textContent = "Ошибка соединения с сервисом DeckyBird: " + e.message;
+        errorBox.style.display = "block";
+      } finally {
+        btnCreate.disabled = false;
+        btnCreate.innerHTML = "<span>+ Создать веб-приложение</span>";
+      }
+    });
+
+    btnLaunchNow.addEventListener("click", async () => {
+      if (!createdAppId) return;
+      await fetch("/api/webapps/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: createdAppId })
+      });
+    });
+
+    btnCreateAnother.addEventListener("click", () => switchTab("create"));
+
+    async function loadWebApps() {
+      appList.innerHTML = '<div class="empty-state">Загрузка...</div>';
+      try {
+        const res = await fetch("/api/webapps/list");
+        const data = await res.json();
+        const items = data.items || [];
+        if (!items.length) {
+          appList.innerHTML = '<div class="empty-state">Пока нет созданных веб-приложений.</div>';
+          return;
+        }
+        appList.innerHTML = "";
+        for (const item of items) {
+          const row = document.createElement("div");
+          row.className = "app-item";
+          row.innerHTML = `
+            <img src="${item.icon_b64 || ""}" alt="">
+            <div class="app-item-info">
+              <div class="app-item-name"></div>
+              <div class="app-item-url"></div>
+            </div>
+            <div class="app-item-actions">
+              <button class="btn-sm btn-launch">Запустить</button>
+              <button class="btn-sm btn-delete">Удалить</button>
+            </div>
+          `;
+          row.querySelector(".app-item-name").textContent = item.name;
+          row.querySelector(".app-item-url").textContent = item.url;
+          row.querySelector(".btn-launch").addEventListener("click", async () => {
+            await fetch("/api/webapps/launch", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: item.id })
+            });
+          });
+          row.querySelector(".btn-delete").addEventListener("click", async () => {
+            await fetch("/api/webapps/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: item.id })
+            });
+            loadWebApps();
+          });
+          appList.appendChild(row);
+        }
+      } catch (e) {
+        appList.innerHTML = '<div class="empty-state">Ошибка загрузки списка.</div>';
+      }
+    }
+  </script>
+</body>
+</html>

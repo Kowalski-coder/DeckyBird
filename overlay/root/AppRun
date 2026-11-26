@@ -149,12 +149,23 @@ if [ -f "${HOME}/.local/share/deckybird/cacert-bundle.pem" ]; then
     LADYBIRD_ARGS+=(--certificate "${HOME}/.local/share/deckybird/cacert-bundle.pem")
 fi
 
-# Russian UI translation hook for Qt menus (via LD_PRELOAD)
+# Russian UI translation hook + DeckyBird UI hook (via LD_PRELOAD)
+# Use atomic mv to avoid SIGBUS in already-running Ladybird/Hub processes
+PRELOAD_LIBS=""
 if [ "${DECKYBIRD_NO_I18N:-0}" != "1" ] && [ -f "${CURRENTDIR}/usr/lib/deckybird-i18n.so" ]; then
-    cp -f "${CURRENTDIR}/usr/lib/deckybird-i18n.so" /tmp/deckybird-i18n.so 2>/dev/null || true
+    cp -f "${CURRENTDIR}/usr/lib/deckybird-i18n.so" "/tmp/deckybird-i18n.so.$$" 2>/dev/null && mv -f "/tmp/deckybird-i18n.so.$$" /tmp/deckybird-i18n.so 2>/dev/null || true
     if [ -f /tmp/deckybird-i18n.so ]; then
-        export LD_PRELOAD="/tmp/deckybird-i18n.so${LD_PRELOAD:+:${LD_PRELOAD}}"
+        PRELOAD_LIBS="/tmp/deckybird-i18n.so"
     fi
+fi
+if [ -f "${CURRENTDIR}/usr/lib/deckybird-ui-hook.so" ]; then
+    cp -f "${CURRENTDIR}/usr/lib/deckybird-ui-hook.so" "/tmp/deckybird-ui-hook.so.$$" 2>/dev/null && mv -f "/tmp/deckybird-ui-hook.so.$$" /tmp/deckybird-ui-hook.so 2>/dev/null || true
+    if [ -f /tmp/deckybird-ui-hook.so ]; then
+        PRELOAD_LIBS="${PRELOAD_LIBS:+${PRELOAD_LIBS}:}/tmp/deckybird-ui-hook.so"
+    fi
+fi
+if [ -n "$PRELOAD_LIBS" ]; then
+    export LD_PRELOAD="${PRELOAD_LIBS}${LD_PRELOAD:+:${LD_PRELOAD}}"
 fi
 
 "${CURRENTDIR}/usr/bin/Ladybird" "${LADYBIRD_ARGS[@]}" "$@"
