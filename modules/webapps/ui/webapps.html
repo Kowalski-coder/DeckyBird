@@ -16,54 +16,54 @@
       min-height: 100vh;
       background: radial-gradient(circle at top center, #1b2838 0%, #0f141c 70%);
       color: #e5e7eb;
-      font-size: 13px;
+      font-size: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 28px;
     }
     .card {
       width: 100%;
-      max-width: 440px;
+      max-width: 620px;
       background-color: #161920;
       border: 1px solid #282f3d;
-      border-radius: 16px;
+      border-radius: 18px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
       overflow: hidden;
     }
-    .container { padding: 20px; }
+    .container { padding: 28px; }
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding-bottom: 14px;
+      gap: 14px;
+      padding-bottom: 18px;
       border-bottom: 1px solid #282f3d;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left { display: flex; align-items: center; gap: 14px; }
     .header-logo {
-      width: 38px;
-      height: 38px;
+      width: 46px;
+      height: 46px;
       background: linear-gradient(135deg, #00acff 0%, #0077cc 100%);
-      border-radius: 10px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 12px rgba(0, 172, 255, 0.25);
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 800;
       color: #fff;
     }
-    .header-title h1 { font-size: 16px; font-weight: 700; color: #f9fafb; letter-spacing: -0.2px; }
-    .subtitle { font-size: 11px; color: #00acff; font-weight: 500; }
+    .header-title h1 { font-size: 20px; font-weight: 700; color: #f9fafb; letter-spacing: -0.2px; }
+    .subtitle { font-size: 13px; color: #00acff; font-weight: 500; }
     .tabs {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       background: #1b202c;
-      padding: 4px;
-      border-radius: 10px;
-      margin-bottom: 16px;
+      padding: 5px;
+      border-radius: 12px;
+      margin-bottom: 20px;
       border: 1px solid #283142;
     }
     .tab-btn {
@@ -71,9 +71,9 @@
       background: transparent;
       border: none;
       color: #94a3b8;
-      padding: 8px 10px;
-      border-radius: 7px;
-      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -193,21 +193,21 @@
       gap: 8px;
       background: rgba(0, 172, 255, 0.08);
       border-left: 3px solid #00acff;
-      padding: 8px 10px;
-      border-radius: 4px;
-      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 18px;
       color: #93c5fd;
-      font-size: 11px;
-      line-height: 1.35;
+      font-size: 13px;
+      line-height: 1.45;
     }
     .btn-primary {
       width: 100%;
       background: #00acff;
       color: #ffffff;
       border: none;
-      border-radius: 9px;
-      padding: 11px 16px;
-      font-size: 13px;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       display: flex;
@@ -281,7 +281,7 @@
           <div class="header-logo">D</div>
           <div class="header-title">
             <h1>Веб-приложение</h1>
-            <span class="subtitle">Интеграция DeckyBird</span>
+            <span class="subtitle">Интеграция веб-приложений в Steam</span>
           </div>
         </div>
       </div>
@@ -309,28 +309,8 @@
           <input type="url" id="app-url" placeholder="https://...">
         </div>
 
-        <div class="options-group">
-          <label class="checkbox-row">
-            <input type="checkbox" id="check-kde" checked>
-            <span class="checkbox-custom"></span>
-            <span class="checkbox-label">
-              <strong>Меню приложений KDE</strong>
-              <small>Категория «Веб-приложения»</small>
-            </span>
-          </label>
-
-          <label class="checkbox-row">
-            <input type="checkbox" id="check-steam" checked>
-            <span class="checkbox-custom"></span>
-            <span class="checkbox-label">
-              <strong>Библиотека Steam</strong>
-              <small>Игровой режим (Раздел «Сторонние»)</small>
-            </span>
-          </label>
-        </div>
-
         <div class="info-note">
-          <span>Открывается без адресной строки и вкладок в нативном разрешении экрана с изолированным профилем.</span>
+          <span>Установленные веб-приложения отображаются в библиотеке Steam в разделе <strong>сторонние</strong></span>
         </div>
 
         <button id="btn-create" class="btn-primary">
@@ -348,7 +328,7 @@
           </svg>
         </div>
         <h2>Готово!</h2>
-        <p id="success-desc">Веб-приложение успешно добавлено в меню KDE и Steam.</p>
+        <p id="success-desc">Веб-приложение успешно добавлено в Steam (раздел «Сторонние»).</p>
         <div class="success-actions">
           <button id="btn-launch-now" class="btn-primary">Запустить сейчас</button>
           <button id="btn-create-another" class="btn-secondary">Создать ещё одно</button>
@@ -368,8 +348,6 @@
     const iconPreview = document.getElementById("icon-preview");
     const iconContainer = document.getElementById("icon-container");
     const fileInput = document.getElementById("file-input");
-    const checkKde = document.getElementById("check-kde");
-    const checkSteam = document.getElementById("check-steam");
     const btnCreate = document.getElementById("btn-create");
     const errorBox = document.getElementById("error-box");
 
@@ -449,6 +427,19 @@
         errorBox.style.display = "block";
         return;
       }
+      const lowUrl = url.toLowerCase();
+      if (
+        lowUrl.startsWith("about:") ||
+        lowUrl.startsWith("resource:") ||
+        lowUrl.startsWith("http://127.0.0.1:8406") ||
+        lowUrl.startsWith("https://127.0.0.1:8406") ||
+        lowUrl.startsWith("http://localhost:8406") ||
+        lowUrl.startsWith("https://localhost:8406")
+      ) {
+        errorBox.textContent = "Нельзя создать веб-приложение для внутренней страницы браузера.";
+        errorBox.style.display = "block";
+        return;
+      }
       btnCreate.disabled = true;
       btnCreate.textContent = "Создание...";
       try {
@@ -459,8 +450,8 @@
             name,
             url,
             icon_b64: customIconB64,
-            add_kde: checkKde.checked,
-            add_steam: checkSteam.checked
+            add_kde: false,
+            add_steam: true
           })
         });
         const data = await res.json();
@@ -468,15 +459,9 @@
           createdAppId = data.id;
           formSection.style.display = "none";
           successSection.style.display = "block";
-          const where = [];
-          if (data.kde_added) where.push("в меню KDE («Веб-приложения»)");
-          if (data.steam_added) where.push("в Steam (раздел «Сторонние»)");
-          successDesc.textContent = where.length
-            ? `Веб-приложение «${data.name}» добавлено ${where.join(" и ")}.`
+          successDesc.textContent = data.steam_added
+            ? `Веб-приложение «${data.name}» добавлено в Steam (раздел «Сторонние»). Для отображения изменений в библиотеке Steam перезапустите Steam (или перейдите в Desktop Mode и обратно).`
             : `Веб-приложение «${data.name}» успешно создано.`;
-          if (data.kde_error) {
-            successDesc.textContent += ` (Меню KDE: нет прав на ~/.local/share/applications — ${data.kde_error})`;
-          }
         } else {
           errorBox.textContent = (data && data.error) || "Не удалось создать веб-приложение.";
           errorBox.style.display = "block";

@@ -379,7 +379,7 @@ class ControlHandler(BaseHTTPRequestHandler):
                 name=body.get("name"),
                 url=body.get("url"),
                 icon_b64=body.get("icon_b64"),
-                add_kde=body.get("add_kde", True),
+                add_kde=body.get("add_kde", False),
                 add_steam=body.get("add_steam", True),
             )
             self._send_json(200, res)

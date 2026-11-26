@@ -63,10 +63,6 @@ if [ -f "$APPDIR/deckybird.png" ]; then
         cp -f "$APPDIR/deckybird.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/deckybird.svg"
         cp -f "$APPDIR/deckybird.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/org.ladybird.Ladybird.svg"
     fi
-    if [ -f "$APPDIR/net.deckybird.DeckyBird.desktop" ]; then
-        cp -f "$APPDIR/net.deckybird.DeckyBird.desktop" "$APPDIR/usr/share/applications/net.deckybird.DeckyBird.desktop"
-        cp -f "$APPDIR/net.deckybird.DeckyBird.desktop" "$APPDIR/usr/share/applications/org.ladybird.Ladybird.desktop"
-    fi
     if command -v rsvg-convert >/dev/null 2>&1 && [ -f "$APPDIR/deckybird.svg" ]; then
         mkdir -p "$APPDIR/usr/share/Lagom/icons/48x48"
         rsvg-convert -w 48 -h 48 "$APPDIR/deckybird.svg" -o "$APPDIR/usr/share/Lagom/icons/48x48/app-browser.png"

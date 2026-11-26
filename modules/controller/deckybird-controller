@@ -61,6 +61,8 @@ class ControllerDaemon:
         self.l3_down = False
         self.r3_down = False
         self.fullscreen_triggered = False
+        self._ctrl_lmb_path = "/dev/shm/deckybird_ctrl_lmb"
+        self._set_ctrl_lmb(False)
 
         # D-pad hat states
         self.dpad_x = 0
@@ -97,7 +99,7 @@ class ControllerDaemon:
                     e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE,
                     e.KEY_UP, e.KEY_DOWN, e.KEY_LEFT, e.KEY_RIGHT,
                     e.KEY_LEFTCTRL, e.KEY_LEFTSHIFT, e.KEY_LEFTALT,
-                    e.KEY_TAB, e.KEY_W, e.KEY_T, e.KEY_R,
+                    e.KEY_TAB, e.KEY_PAGEUP, e.KEY_PAGEDOWN, e.KEY_W, e.KEY_T, e.KEY_R,
                     e.KEY_F5, e.KEY_F11, e.KEY_BACK, e.KEY_FORWARD
                 ]
             }
@@ -182,6 +184,13 @@ class ControllerDaemon:
                 to_remove.add(w)
         self.clients -= to_remove
 
+    def _set_ctrl_lmb(self, down):
+        try:
+            with open(self._ctrl_lmb_path, "wb") as f:
+                f.write(b"1" if down else b"0")
+        except Exception:
+            pass
+
     def set_mode(self, new_mode):
         if self.mode != new_mode:
             self.mode = new_mode
@@ -192,6 +201,7 @@ class ControllerDaemon:
                     self.ui.write(e.EV_KEY, e.BTN_RIGHT, 0)
                 if self.r2_down:
                     self.r2_down = False
+                    self._set_ctrl_lmb(False)
                     self.ui.write(e.EV_KEY, e.BTN_LEFT, 0)
                 if self.lpad_click_down:
                     self.lpad_click_down = False
@@ -251,6 +261,7 @@ class ControllerDaemon:
                     is_pressed = (value > 10000)
                     if is_pressed != self.r2_down:
                         self.r2_down = is_pressed
+                        self._set_ctrl_lmb(is_pressed or self.r3_down)
                         self.ui.write(e.EV_KEY, e.BTN_LEFT, 1 if is_pressed else 0)
                         self.ui.syn()
             elif number == 6:  # D-pad Hat0X (Left/Right)
@@ -296,6 +307,7 @@ class ControllerDaemon:
                 self.r3_down = is_down
                 self.check_stick_combo()
                 if self.ui and not (self.l3_down and self.r3_down):
+                    self._set_ctrl_lmb(is_down or self.r2_down)
                     self.ui.write(e.EV_KEY, e.BTN_LEFT, 1 if is_down else 0)
                     self.ui.syn()
             elif number == 9:  # L3 (Left stick press)
@@ -323,10 +335,10 @@ class ControllerDaemon:
                         self.send_key_combo(e.KEY_F5)
                         asyncio.create_task(self.broadcast({"action": "reload"}))
                 elif number == 4:  # L1 (LB) -> Prev Tab
-                    self.send_key_combo(e.KEY_LEFTCTRL, e.KEY_LEFTSHIFT, e.KEY_TAB)
+                    self.send_key_combo(e.KEY_LEFTCTRL, e.KEY_PAGEUP)
                     asyncio.create_task(self.broadcast({"action": "prev_tab"}))
                 elif number == 5:  # R1 (RB) -> Next Tab
-                    self.send_key_combo(e.KEY_LEFTCTRL, e.KEY_TAB)
+                    self.send_key_combo(e.KEY_LEFTCTRL, e.KEY_PAGEDOWN)
                     asyncio.create_task(self.broadcast({"action": "next_tab"}))
 
     def process_hid_report(self, data):
@@ -416,7 +428,7 @@ class ControllerDaemon:
                 await asyncio.sleep(0.5)
                 continue
 
-            r, _, _ = select.select(fds, [], [], 0.016)
+            r, _, _ = select.select(fds, [], [], 0)
             for fd in r:
                 if fd == self.js_fd:
                     try:
@@ -474,7 +486,7 @@ class ControllerDaemon:
                 else:
                     self.scroll_accum = 0.0
 
-            await asyncio.sleep(0.016)
+            await asyncio.sleep(0.008)
 
     async def handle_client(self, reader, writer):
         headers = b""

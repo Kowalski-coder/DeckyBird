@@ -751,7 +751,7 @@ class TorrentServiceHandler(BaseHTTPRequestHandler):
                     name=req_data.get("name"),
                     url=req_data.get("url"),
                     icon_b64=req_data.get("icon_b64"),
-                    add_kde=req_data.get("add_kde", True),
+                    add_kde=req_data.get("add_kde", False),
                     add_steam=req_data.get("add_steam", True)
                 )
                 self.send_json(res)

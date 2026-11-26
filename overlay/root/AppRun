@@ -24,10 +24,31 @@ fi
 # Register desktop entry & icon for SteamOS / KDE
 mkdir -p "${HOME}/.local/share/applications" "${HOME}/.local/share/icons/hicolor/128x128/apps" 2>/dev/null || true
 if [ -w "${HOME}/.local/share/applications" ] && [ -f "${CURRENTDIR}/net.deckybird.DeckyBird.desktop" ]; then
-    EXEC_TARGET="${APPIMAGE:-${CURRENTDIR}/AppRun}"
-    sed "s|^Exec=.*|Exec=\"${EXEC_TARGET}\" %u|" "${CURRENTDIR}/net.deckybird.DeckyBird.desktop" \
-        > "${HOME}/.local/share/applications/net.deckybird.DeckyBird.desktop" 2>/dev/null || true
+    if [ ! -f "${HOME}/.local/share/applications/deckybird.desktop" ]; then
+        EXEC_TARGET="${APPIMAGE:-${CURRENTDIR}/AppRun}"
+        sed "s|^Exec=.*|Exec=\"${EXEC_TARGET}\" %u|" "${CURRENTDIR}/net.deckybird.DeckyBird.desktop" \
+            > "${HOME}/.local/share/applications/net.deckybird.DeckyBird.desktop" 2>/dev/null || true
+    fi
 fi
+
+# Ensure Steam Input defaults DeckyBird to Gamepad + Mouse Trackpad template (if not already customized)
+python3 -c '
+import glob, os
+for p in glob.glob(os.path.expanduser("~/.local/share/Steam/steamapps/common/Steam Controller Configs/*/config/configset_controller_neptune.vdf")):
+    try:
+        with open(p, "r", encoding="utf-8", errors="ignore") as f:
+            s = f.read()
+        if "\"deckybird\"" in s.lower():
+            continue
+        idx = s.rfind("}")
+        if idx != -1:
+            snippet = "\t\"deckybird\"\n\t{\n\t\t\"template\"\t\t\"controller_neptune_gamepad+mouse.vdf\"\n\t}\n"
+            s = s[:idx] + snippet + s[idx:]
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(s)
+    except Exception:
+        pass
+' 2>/dev/null || true
 if [ -w "${HOME}/.local/share/icons/hicolor/128x128/apps" ] && [ -f "${CURRENTDIR}/deckybird.png" ]; then
     cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/128x128/apps/deckybird.png" 2>/dev/null || true
     cp -f "${CURRENTDIR}/deckybird.png" "${HOME}/.local/share/icons/hicolor/128x128/apps/org.ladybird.Ladybird.png" 2>/dev/null || true

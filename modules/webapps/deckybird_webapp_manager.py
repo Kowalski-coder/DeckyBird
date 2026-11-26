@@ -139,8 +139,13 @@ Icon=deckybird
     with open(dir_file, "w", encoding="utf-8") as f:
         f.write(dir_content)
 
-    menu_file = os.path.join(MENUS_MERGED_DIR, "deckybird-webapps.menu")
-    menu_content = """<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+    for merged_dir in (
+        MENUS_MERGED_DIR,
+        os.path.join(HOME, ".config", "menus", "plasma-applications-merged"),
+    ):
+        os.makedirs(merged_dir, exist_ok=True)
+        menu_file = os.path.join(merged_dir, "deckybird-webapps.menu")
+        menu_content = """<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
   "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
 <Menu>
 \t<Name>Applications</Name>
@@ -156,8 +161,8 @@ Icon=deckybird
 \t</Menu>
 </Menu>
 """
-    with open(menu_file, "w", encoding="utf-8") as f:
-        f.write(menu_content)
+        with open(menu_file, "w", encoding="utf-8") as f:
+            f.write(menu_content)
 
     if os.path.isfile(KMENUEDIT_PATH):
         try:
@@ -276,6 +281,7 @@ if [ -z "$DECKYBIRD_BIN" ]; then
 fi
 
 export DECKYBIRD_WEBAPP=1
+export DECKYBIRD_WEBAPP_ID="$APP_ID"
 exec "$DECKYBIRD_BIN" \\
     --profile-path "$PROFILE_DIR" \\
     "$APP_URL"
@@ -301,13 +307,29 @@ def fetch_favicon_bytes(url: str) -> bytes:
     return b""
 
 
-def create_webapp(name: str, url: str, icon_b64: str = None, add_kde: bool = True, add_steam: bool = True) -> dict:
+def _is_internal_browser_url(url: str) -> bool:
+    u = (url or "").strip().lower()
+    if not u:
+        return True
+    return (
+        u.startswith("about:")
+        or u.startswith("resource:")
+        or u.startswith("http://127.0.0.1:8406")
+        or u.startswith("https://127.0.0.1:8406")
+        or u.startswith("http://localhost:8406")
+        or u.startswith("https://localhost:8406")
+    )
+
+
+def create_webapp(name: str, url: str, icon_b64: str = None, add_kde: bool = False, add_steam: bool = True) -> dict:
     name = (name or "").strip()
     url = (url or "").strip()
     if not name:
         return {"ok": False, "error": "Имя веб-приложения не может быть пустым"}
     if not url:
         return {"ok": False, "error": "URL веб-приложения не может быть пустым"}
+    if _is_internal_browser_url(url):
+        return {"ok": False, "error": "Нельзя создать веб-приложение для внутренней страницы браузера"}
     if not (url.startswith("http://") or url.startswith("https://")):
         url = "https://" + url
 
@@ -382,8 +404,25 @@ def create_webapp(name: str, url: str, icon_b64: str = None, add_kde: bool = Tru
     kde_error = ""
     if add_kde:
         try:
-            ensure_kde_webapps_category()
             os.makedirs(APPLICATIONS_DIR, exist_ok=True)
+            if not os.access(APPLICATIONS_DIR, os.W_OK):
+                is_gamescope = bool(os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") or os.environ.get("XDG_CURRENT_DESKTOP") == "gamescope")
+                user_name = os.environ.get("USER") or os.path.basename(HOME)
+                if not is_gamescope and shutil.which("pkexec"):
+                    try:
+                        subprocess.run(
+                            ["pkexec", "chown", "-R", f"{user_name}:{user_name}", APPLICATIONS_DIR],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            timeout=30,
+                        )
+                    except Exception:
+                        pass
+                if not os.access(APPLICATIONS_DIR, os.W_OK):
+                    raise PermissionError(
+                        f"Папка {APPLICATIONS_DIR} принадлежит root. Выполните: sudo chown -R {user_name}:{user_name} {APPLICATIONS_DIR}"
+                    )
+            ensure_kde_webapps_category()
             desktop_path = os.path.join(APPLICATIONS_DIR, f"deckybird-webapp-{app_id}.desktop")
             desktop_entry = f"""[Desktop Entry]
 Type=Application
@@ -539,7 +578,35 @@ def add_to_steam(name: str, app_id: str, launcher_path: str, app_dir: str, icon_
             except Exception:
                 pass
 
+        _ensure_steam_controller_template(u, name)
+
     return added_any
+
+
+def _ensure_steam_controller_template(user_id: str, app_name: str, template: str = "controller_neptune_gamepad+mouse.vdf"):
+    """Sets default Steam Input template for a non-Steam shortcut if not already configured."""
+    key = re.sub(r'[^a-z0-9 ]+', '', app_name.lower()).strip()
+    if not key:
+        return
+    for root in (
+        os.path.join(HOME, ".local", "share", "Steam", "steamapps", "common", "Steam Controller Configs"),
+        os.path.join(HOME, ".steam", "steam", "steamapps", "common", "Steam Controller Configs"),
+    ):
+        cfg_path = os.path.join(root, user_id, "config", "configset_controller_neptune.vdf")
+        if not os.path.isfile(cfg_path):
+            continue
+        try:
+            with open(cfg_path, "r", encoding="utf-8", errors="ignore") as f:
+                s = f.read()
+            if f'"{key}"' in s.lower():
+                continue
+            idx = s.rfind("}")
+            if idx != -1:
+                snippet = f'\t"{key}"\n\t{{\n\t\t"template"\t\t"{template}"\n\t}}\n'
+                with open(cfg_path, "w", encoding="utf-8") as f:
+                    f.write(s[:idx] + snippet + s[idx:])
+        except Exception:
+            pass
 
 
 def remove_from_steam(app_id: str) -> bool:
@@ -583,11 +650,43 @@ def remove_from_steam(app_id: str) -> bool:
     return removed_any
 
 
+def _get_steam_webapp_ids():
+    """Returns a set of webapp IDs currently present in Steam shortcuts.vdf, or None if Steam userdata is unavailable."""
+    userdata_root = _find_steam_userdata()
+    if not userdata_root:
+        return None
+    user_dirs = [d for d in os.listdir(userdata_root) if os.path.isdir(os.path.join(userdata_root, d)) and d != "0"]
+    if not user_dirs:
+        return None
+
+    found_vdf = False
+    ids = set()
+    for u in user_dirs:
+        shortcuts_file = os.path.join(userdata_root, u, "config", "shortcuts.vdf")
+        if not os.path.isfile(shortcuts_file):
+            continue
+        found_vdf = True
+        try:
+            with open(shortcuts_file, "rb") as f:
+                _, sc = decode_vdf(f.read())
+            for entry in sc.values():
+                exe = str(entry.get("Exe", ""))
+                launch_opts = str(entry.get("LaunchOptions", "")).strip().strip('"')
+                if "deckybird-webapp-launch" in exe and launch_opts:
+                    ids.add(launch_opts)
+        except Exception:
+            pass
+    return ids if found_vdf else None
+
+
 def list_webapps() -> list:
     results = []
     if not os.path.isdir(WEBAPPS_DIR):
         return results
+    steam_ids = _get_steam_webapp_ids()
     for entry in sorted(os.listdir(WEBAPPS_DIR)):
+        if steam_ids is not None and entry not in steam_ids:
+            continue
         cfg_path = os.path.join(WEBAPPS_DIR, entry, "config.json")
         if os.path.isfile(cfg_path):
             try:
