@@ -123,7 +123,9 @@
   };
 
   // WebExtension chrome.* / browser.* factory per extension
+  window.__deckyExtLocales = window.__deckyExtLocales || {};
   window.__deckyCreateWebExtAPI = function (extId, manifest) {
+    const locales = window.__deckyExtLocales[extId] || {};
     const makeStorageArea = (area) => ({
       get(keys, cb) {
         const p = apiCall(`/storage?ext=${encodeURIComponent(extId)}&area=${area}`).then((r) => {
@@ -178,9 +180,49 @@
         sync: makeStorageArea("sync"),
         onChanged: { addListener: () => {}, removeListener: () => {} },
       },
+      tabs: {
+        query: (q, cb) => {
+          const res = [{ id: 1, active: true, url: location.href, title: document.title }];
+          if (typeof cb === "function") cb(res);
+          return Promise.resolve(res);
+        },
+        getCurrent: (cb) => {
+          const tab = { id: 1, active: true, url: location.href, title: document.title };
+          if (typeof cb === "function") cb(tab);
+          return Promise.resolve(tab);
+        },
+        create: (opts, cb) => {
+          if (opts && opts.url) window.open(opts.url, "_blank");
+          const tab = { id: 2, url: (opts && opts.url) || "" };
+          if (typeof cb === "function") cb(tab);
+          return Promise.resolve(tab);
+        },
+        sendMessage: (tabId, msg, cb) => {
+          if (typeof cb === "function") cb({});
+          return Promise.resolve({});
+        },
+        onUpdated: { addListener: () => {}, removeListener: () => {} },
+      },
+      permissions: {
+        contains: (perms, cb) => {
+          if (typeof cb === "function") cb(true);
+          return Promise.resolve(true);
+        },
+        request: (perms, cb) => {
+          if (typeof cb === "function") cb(true);
+          return Promise.resolve(true);
+        },
+      },
+      management: {
+        getSelf: (cb) => {
+          const info = Object.assign({ id: extId, enabled: true }, manifest || {});
+          if (typeof cb === "function") cb(info);
+          return Promise.resolve(info);
+        },
+      },
       i18n: {
         getUILanguage: () => navigator.language || "ru",
-        getMessage: (key) => key,
+        getMessage: (key) => locales[String(key || "").toLowerCase()] || key,
       },
     };
     return api;

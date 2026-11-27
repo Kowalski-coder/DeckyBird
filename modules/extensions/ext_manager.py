@@ -2,13 +2,12 @@
 """
 DeckyBird Extensions Manager & Runtime
 - Built-in extensions: VOT, uBlock Origin, Decentraleyes, GhostPrint, Privacy Badger
-- Universal installer for Chrome (.crx), Firefox (.xpi), and Userscripts (.user.js)
+- Tampermonkey-style Userscripts (.user.js) with auto-updates
 """
 
 import base64
 import fnmatch
 import hashlib
-import io
 import json
 import os
 import re
@@ -17,7 +16,6 @@ import threading
 import time
 import urllib.parse
 import urllib.request
-import zipfile
 
 HOME = os.path.expanduser("~")
 DATA_DIR = os.path.join(HOME, ".local", "share", "deckybird")
@@ -110,6 +108,7 @@ def _read_builtin_text(filename: str) -> str:
 def _default_state() -> dict:
     return {
         "mitm_enabled": True,
+        "autoupdate_enabled": True,
         "builtins": {
             "vot": {
                 "id": "vot",
@@ -175,7 +174,8 @@ def load_state() -> dict:
         except Exception:
             st = _default_state()
         defaults = _default_state()
-        st.setdefault("mitm_enabled", True)
+        st["mitm_enabled"] = True
+        st.setdefault("autoupdate_enabled", True)
         st.setdefault("builtins", {})
         for k, v in defaults["builtins"].items():
             if k not in st["builtins"]:
@@ -252,14 +252,6 @@ def should_block_request(host: str, path: str, referer_host: str = "") -> tuple:
                 return True, "Privacy Badger", False
             if action == "cookieblock":
                 return False, "Privacy Badger (cookieblock)", True
-
-    # 3. Custom extensions DNR domains
-    for ext in st.get("custom", {}).values():
-        if not ext.get("enabled", True):
-            continue
-        dnr = set(ext.get("dnr_domains", []))
-        if dnr and _domain_matches(host_l, dnr):
-            return True, ext.get("name", "Extension"), False
 
     return False, "", False
 
@@ -383,54 +375,28 @@ def get_injection_snippets(url: str) -> tuple:
             need_polyfill = True
             script_tags_body.append(f"<script id=\"deckybird-vot\">\n{vot_js}\n</script>")
 
-    # 4. Custom installed extensions / userscripts
+    # 4. Custom installed userscripts / extensions
     for ext_id, ext in st.get("custom", {}).items():
         if not ext.get("enabled", True):
             continue
         ext_root = os.path.join(EXT_DIR, ext_id)
         if ext.get("kind") == "userscript":
             matches = ext.get("matches", [])
-            if any(_match_pattern(m, url) for m in matches):
-                us_path = os.path.join(ext_root, ext.get("userscript_file", "script.user.js"))
-                if os.path.isfile(us_path):
-                    with open(us_path, "r", encoding="utf-8", errors="ignore") as f:
-                        code = f.read()
-                    need_polyfill = True
-                    script_tags_body.append(f"<script data-ext=\"{ext_id}\">\n(() => {{\n{code}\n}})();\n</script>")
-        else:
-            for cs in ext.get("content_scripts", []):
-                matches = cs.get("matches", [])
-                excludes = cs.get("exclude_matches", [])
-                if not any(_match_pattern(m, url) for m in matches):
-                    continue
-                if any(_match_pattern(e, url) for e in excludes):
-                    continue
-                for css_rel in cs.get("css", []):
-                    css_p = os.path.join(ext_root, css_rel)
-                    if os.path.isfile(css_p):
-                        with open(css_p, "r", encoding="utf-8", errors="ignore") as f:
-                            head_parts.append(f"<style data-ext=\"{ext_id}\">{f.read()}</style>")
-                js_chunks = []
-                for js_rel in cs.get("js", []):
-                    js_p = os.path.join(ext_root, js_rel)
-                    if os.path.isfile(js_p):
-                        with open(js_p, "r", encoding="utf-8", errors="ignore") as f:
-                            js_chunks.append(f.read())
-                if js_chunks:
-                    need_polyfill = True
-                    manifest_json = json.dumps(ext.get("manifest", {}))
-                    wrapper = (
-                        f"<script data-ext=\"{ext_id}\">\n"
-                        f"(() => {{\n"
-                        f"const chrome = window.__deckyCreateWebExtAPI({json.dumps(ext_id)}, {manifest_json});\n"
-                        f"const browser = chrome;\n"
-                        + "\n".join(js_chunks)
-                        + "\n})();\n</script>"
-                    )
-                    if cs.get("run_at") == "document_start":
-                        head_parts.append(wrapper)
-                    else:
-                        script_tags_body.append(wrapper)
+            excludes = ext.get("excludes", [])
+            if not any(_match_pattern(m, url) for m in matches):
+                continue
+            if any(_match_pattern(e, url) for e in excludes):
+                continue
+            us_path = os.path.join(ext_root, ext.get("userscript_file", "script.user.js"))
+            if os.path.isfile(us_path):
+                with open(us_path, "r", encoding="utf-8", errors="ignore") as f:
+                    code = f.read()
+                need_polyfill = True
+                tag = f"<script data-ext=\"{ext_id}\">\n(() => {{\n{code}\n}})();\n</script>"
+                if ext.get("run_at") == "document-start":
+                    head_parts.append(tag)
+                else:
+                    script_tags_body.append(tag)
 
     if need_polyfill:
         polyfill_js = _read_builtin_text("webext_polyfill.js")
@@ -441,38 +407,252 @@ def get_injection_snippets(url: str) -> tuple:
     return "\n".join(head_parts), "\n".join(body_parts)
 
 
-def _extract_crx_to_zip_bytes(raw: bytes) -> bytes:
-    if raw[:4] == b"Cr24":
-        idx = raw.find(b"PK\x03\x04")
-        if idx != -1:
-            return raw[idx:]
-    return raw
-
-
 def _parse_userscript_meta(code: str) -> dict:
     name = "Userscript"
     version = "1.0"
     desc = "Пользовательский скрипт"
+    author = ""
+    update_url = ""
+    download_url = ""
+    run_at = "document-end"
     matches = []
-    for line in code.splitlines()[:80]:
-        m = re.match(r"^\s*//\s*@(\w+)\s+(.+)$", line)
+    excludes = []
+    for line in code.splitlines()[:120]:
+        m = re.match(r"^\s*//\s*@([a-zA-Z0-9_-]+)\s+(.+)$", line)
         if not m:
             continue
         k, v = m.group(1).lower(), m.group(2).strip()
-        if k == "name":
+        if k == "name" and name == "Userscript":
             name = v
         elif k == "version":
             version = v
-        elif k == "description":
+        elif k == "description" and desc == "Пользовательский скрипт":
             desc = v
+        elif k == "author":
+            author = v
+        elif k == "updateurl":
+            update_url = v
+        elif k == "downloadurl":
+            download_url = v
+        elif k == "run-at":
+            run_at = v.lower()
         elif k in ("match", "include"):
             matches.append(v)
+        elif k == "exclude":
+            excludes.append(v)
     if not matches:
         matches = ["<all_urls>"]
-    return {"name": name, "version": version, "description": desc, "matches": matches}
+    return {
+        "name": name,
+        "version": version,
+        "description": desc,
+        "author": author,
+        "update_url": update_url,
+        "download_url": download_url,
+        "run_at": run_at,
+        "matches": matches,
+        "excludes": excludes,
+    }
 
 
-def _install_zip_extension(ext_id: str, zip_bytes: bytes, source: str) -> dict:
+def _version_tuple(v: str):
+    parts = re.findall(r"\d+", str(v or "0"))
+    return tuple(int(x) for x in parts) if parts else (0,)
+
+
+def _is_newer_version(remote_ver: str, local_ver: str) -> bool:
+    return _version_tuple(remote_ver) > _version_tuple(local_ver)
+
+
+def save_userscript_code(code: str, script_id: str = "", source_url: str = "") -> dict:
+    if not (code or "").strip():
+        return {"ok": False, "error": "Код скрипта не может быть пустым"}
+    meta = _parse_userscript_meta(code)
+    ext_id = re.sub(r"[^a-zA-Z0-9_-]", "", script_id) if script_id else ""
+    if not ext_id:
+        ext_id = "us-" + hashlib.sha1(meta["name"].encode("utf-8")).hexdigest()[:10]
+
+    dest = os.path.join(EXT_DIR, ext_id)
+    os.makedirs(dest, exist_ok=True)
+    with open(os.path.join(dest, "script.user.js"), "w", encoding="utf-8") as f:
+        f.write(code)
+
+    st = load_state()
+    prev = st.get("custom", {}).get(ext_id, {})
+    final_source = source_url or prev.get("source_url", "")
+    st["custom"][ext_id] = {
+        "id": ext_id,
+        "name": meta["name"],
+        "version": meta["version"],
+        "description": meta["description"],
+        "author": meta["author"],
+        "source": "userscript",
+        "kind": "userscript",
+        "enabled": prev.get("enabled", True),
+        "matches": meta["matches"],
+        "excludes": meta["excludes"],
+        "run_at": meta["run_at"],
+        "update_url": meta["update_url"] or final_source,
+        "download_url": meta["download_url"] or final_source,
+        "source_url": final_source,
+        "userscript_file": "script.user.js",
+        "installed_at": prev.get("installed_at", int(time.time())),
+        "updated_at": int(time.time()),
+        "last_checked": int(time.time()),
+    }
+    save_state(st)
+    return {"ok": True, "extension": st["custom"][ext_id]}
+
+
+def install_from_bytes(filename: str, raw_bytes: bytes, source: str = "local", slug: str = "") -> dict:
+    fname = (filename or "script.user.js").lower()
+    if fname.endswith(".user.js") or fname.endswith(".js"):
+        code = raw_bytes.decode("utf-8", errors="ignore")
+        return save_userscript_code(code)
+    return {"ok": False, "error": "Поддерживаются только пользовательские скрипты (.user.js)"}
+
+
+def install_from_url(url_or_id: str, slug_hint: str = "") -> dict:
+    target = (url_or_id or "").strip()
+    if not (target.startswith("http://") or target.startswith("https://")):
+        return {"ok": False, "error": "Укажите прямую ссылку (http/https) на .user.js скрипт"}
+    req = urllib.request.Request(target, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        raw = resp.read()
+    code = raw.decode("utf-8", errors="ignore")
+    return save_userscript_code(code, source_url=target)
+
+
+def check_userscript_updates(script_id: str = "") -> dict:
+    st = load_state()
+    checked = 0
+    updated = []
+    errors = []
+    now = int(time.time())
+
+    items = list(st.get("custom", {}).items())
+    for eid, ext in items:
+        if script_id and eid != script_id:
+            continue
+        if ext.get("kind") != "userscript":
+            continue
+        check_url = ext.get("update_url") or ext.get("download_url") or ext.get("source_url") or ""
+        if not check_url:
+            continue
+        checked += 1
+        try:
+            req = urllib.request.Request(check_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                remote_code = resp.read().decode("utf-8", errors="ignore")
+            remote_meta = _parse_userscript_meta(remote_code)
+            ext["last_checked"] = now
+            if _is_newer_version(remote_meta["version"], ext.get("version", "0")):
+                dl_url = remote_meta["download_url"] or ext.get("download_url") or check_url
+                if dl_url != check_url:
+                    req2 = urllib.request.Request(dl_url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req2, timeout=20) as resp2:
+                        remote_code = resp2.read().decode("utf-8", errors="ignore")
+                save_userscript_code(remote_code, script_id=eid, source_url=ext.get("source_url") or dl_url)
+                updated.append({"id": eid, "name": remote_meta["name"], "version": remote_meta["version"]})
+            else:
+                st["custom"][eid]["last_checked"] = now
+                save_state(st)
+        except Exception as ex:
+            errors.append({"id": eid, "error": str(ex)})
+
+    return {"ok": True, "checked": checked, "updated": updated, "errors": errors}
+
+
+def set_autoupdate(enabled: bool) -> dict:
+    st = load_state()
+    st["autoupdate_enabled"] = bool(enabled)
+    save_state(st)
+    return {"ok": True, "autoupdate_enabled": st["autoupdate_enabled"]}
+
+
+_AUTOUPDATE_STARTED = False
+
+
+def start_autoupdate_loop():
+    global _AUTOUPDATE_STARTED
+    if _AUTOUPDATE_STARTED:
+        return
+    _AUTOUPDATE_STARTED = True
+
+    def _worker():
+        time.sleep(20)
+        while True:
+            try:
+                st = load_state()
+                if st.get("autoupdate_enabled", True):
+                    now = int(time.time())
+                    for eid, ext in list(st.get("custom", {}).items()):
+                        if ext.get("kind") == "userscript" and (now - ext.get("last_checked", 0)) >= 43200:
+                            check_userscript_updates(eid)
+            except Exception:
+                pass
+            time.sleep(3600)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
+def _load_extension_locales(dest: str, manifest: dict) -> dict:
+    locales_dir = os.path.join(dest, "_locales")
+    if not os.path.isdir(locales_dir):
+        return {}
+    candidates = []
+    def_loc = manifest.get("default_locale")
+    for loc in ("ru", "ru_RU", def_loc, "en", "en_US"):
+        if loc and loc not in candidates:
+            candidates.append(loc)
+    try:
+        for d in sorted(os.listdir(locales_dir)):
+            if d not in candidates:
+                candidates.append(d)
+    except Exception:
+        pass
+
+    merged = {}
+    # Load fallback first, then preferred (ru) on top
+    for loc in reversed(candidates):
+        msg_file = os.path.join(locales_dir, loc, "messages.json")
+        if os.path.isfile(msg_file):
+            try:
+                with open(msg_file, "r", encoding="utf-8", errors="ignore") as f:
+                    raw = json.load(f)
+                for k, v in raw.items():
+                    if isinstance(v, dict) and "message" in v:
+                        merged[k.lower()] = v["message"]
+            except Exception:
+                pass
+    return merged
+
+
+def _resolve_msg(text: str, messages: dict) -> str:
+    if not text or "__MSG_" not in text:
+        return text
+    def repl(m):
+        return messages.get(m.group(1).lower(), m.group(0))
+    return re.sub(r"__MSG_([a-zA-Z0-9_@]+)__", repl, text)
+
+
+def _pick_manifest_icon(manifest: dict, dest: str) -> str:
+    icons = manifest.get("icons") or {}
+    if not isinstance(icons, dict):
+        action = manifest.get("action") or manifest.get("browser_action") or {}
+        icons = action.get("default_icon") if isinstance(action.get("default_icon"), dict) else {}
+    for size in ("128", "96", "64", "48", "32", "16"):
+        rel = icons.get(size)
+        if rel and os.path.isfile(os.path.join(dest, rel.lstrip("/"))):
+            return rel.lstrip("/")
+    for rel in icons.values():
+        if isinstance(rel, str) and os.path.isfile(os.path.join(dest, rel.lstrip("/"))):
+            return rel.lstrip("/")
+    return ""
+
+
+def _install_zip_extension(ext_id: str, zip_bytes: bytes, source: str, slug: str = "") -> dict:
     dest = os.path.join(EXT_DIR, ext_id)
     if os.path.isdir(dest):
         shutil.rmtree(dest)
@@ -487,6 +667,8 @@ def _install_zip_extension(ext_id: str, zip_bytes: bytes, source: str) -> dict:
 
     with open(manifest_path, "r", encoding="utf-8", errors="ignore") as f:
         manifest = json.load(f)
+
+    messages = _load_extension_locales(dest, manifest)
 
     # Extract DNR blocked domains if present
     dnr_domains = []
@@ -506,31 +688,32 @@ def _install_zip_extension(ext_id: str, zip_bytes: bytes, source: str) -> dict:
                 pass
 
     action = manifest.get("action") or manifest.get("browser_action") or manifest.get("page_action") or {}
-    popup_path = action.get("default_popup") or ""
-    if not popup_path:
-        opts = manifest.get("options_ui", {}).get("page") or manifest.get("options_page") or ""
-        popup_path = opts
+    popup_path = (action.get("default_popup") or "").lstrip("/")
+    options_path = (manifest.get("options_ui", {}).get("page") or manifest.get("options_page") or "").lstrip("/")
+    icon_path = _pick_manifest_icon(manifest, dest)
 
-    name = manifest.get("name", ext_id)
-    if name.startswith("__MSG_"):
-        name = ext_id
+    name = _resolve_msg(manifest.get("name", ext_id), messages)
+    description = _resolve_msg(manifest.get("description", ""), messages)
 
     st = load_state()
     st["custom"][ext_id] = {
         "id": ext_id,
+        "slug": slug or ext_id,
         "name": name,
         "version": manifest.get("version", "1.0"),
-        "description": manifest.get("description", ""),
+        "description": description,
         "source": source,
         "kind": "webext",
         "enabled": True,
+        "icon_path": icon_path,
         "popup_path": popup_path,
+        "options_path": options_path,
         "content_scripts": manifest.get("content_scripts", []),
         "dnr_domains": dnr_domains,
         "manifest": {
             "name": name,
             "version": manifest.get("version", "1.0"),
-            "manifest_version": manifest.get("manifest_version", 3),
+            "manifest_version": manifest.get("manifest_version", 2),
         },
         "installed_at": int(time.time()),
     }
@@ -538,89 +721,9 @@ def _install_zip_extension(ext_id: str, zip_bytes: bytes, source: str) -> dict:
     return {"ok": True, "extension": st["custom"][ext_id]}
 
 
-def install_from_bytes(filename: str, raw_bytes: bytes, source: str = "local") -> dict:
-    fname = (filename or "ext").lower()
-    if fname.endswith(".user.js") or fname.endswith(".js"):
-        code = raw_bytes.decode("utf-8", errors="ignore")
-        meta = _parse_userscript_meta(code)
-        ext_id = "us-" + hashlib.sha1(meta["name"].encode("utf-8")).hexdigest()[:10]
-        dest = os.path.join(EXT_DIR, ext_id)
-        os.makedirs(dest, exist_ok=True)
-        with open(os.path.join(dest, "script.user.js"), "w", encoding="utf-8") as f:
-            f.write(code)
-        st = load_state()
-        st["custom"][ext_id] = {
-            "id": ext_id,
-            "name": meta["name"],
-            "version": meta["version"],
-            "description": meta["description"],
-            "source": "userscript",
-            "kind": "userscript",
-            "enabled": True,
-            "matches": meta["matches"],
-            "userscript_file": "script.user.js",
-            "installed_at": int(time.time()),
-        }
-        save_state(st)
-        return {"ok": True, "extension": st["custom"][ext_id]}
-
-    zip_bytes = _extract_crx_to_zip_bytes(raw_bytes)
-    ext_id = re.sub(r"[^a-zA-Z0-9_-]", "", os.path.splitext(os.path.basename(filename))[0])[:36]
-    if not ext_id:
-        ext_id = "ext-" + hashlib.sha1(zip_bytes[:256]).hexdigest()[:10]
-    return _install_zip_extension(ext_id, zip_bytes, source)
-
-
-def install_from_url(url_or_id: str) -> dict:
-    target = (url_or_id or "").strip()
-    if not target:
-        return {"ok": False, "error": "Укажите ссылку на Chrome Web Store, Firefox Add-ons или .user.js"}
-
-    # 1. Chrome Web Store ID or URL
-    cws_match = re.search(r"([a-p]{32})", target)
-    if ("chromewebstore.google.com" in target or "chrome.google.com/webstore" in target or re.fullmatch(r"[a-p]{32}", target)) and cws_match:
-        cws_id = cws_match.group(1)
-        crx_url = (
-            "https://clients2.google.com/service/update2/crx"
-            f"?response=redirect&prodversion=130.0&acceptformat=crx2,crx3&x=id%3D{cws_id}%26uc"
-        )
-        req = urllib.request.Request(crx_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            raw = resp.read()
-        return install_from_bytes(f"{cws_id}.crx", raw, source="chrome")
-
-    # 2. Firefox Add-ons (AMO) URL
-    amo_match = re.search(r"addons\.mozilla\.org/[^/]+/firefox/addon/([^/?#]+)", target)
-    if amo_match:
-        slug = amo_match.group(1)
-        api_url = f"https://addons.mozilla.org/api/v5/addons/addon/{urllib.parse.quote(slug)}/"
-        req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            info = json.loads(resp.read().decode("utf-8"))
-        xpi_url = info.get("current_version", {}).get("file", {}).get("url")
-        if not xpi_url:
-            return {"ok": False, "error": "Не удалось получить ссылку на .xpi с AMO"}
-        req2 = urllib.request.Request(xpi_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req2, timeout=25) as resp2:
-            raw = resp2.read()
-        return install_from_bytes(f"{slug}.xpi", raw, source="firefox")
-
-    # 3. Direct URL (.xpi, .crx, .user.js, .zip)
-    if target.startswith("http://") or target.startswith("https://"):
-        req = urllib.request.Request(target, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            raw = resp.read()
-        fname = os.path.basename(urllib.parse.urlparse(target).path) or "extension.zip"
-        return install_from_bytes(fname, raw, source="url")
-
-    return {"ok": False, "error": "Нераспознанный формат ссылки или ID расширения"}
-
-
 def toggle_extension(ext_id: str, enabled: bool) -> dict:
     st = load_state()
-    if ext_id == "__mitm__":
-        st["mitm_enabled"] = bool(enabled)
-    elif ext_id in st["builtins"]:
+    if ext_id in st["builtins"]:
         st["builtins"][ext_id]["enabled"] = bool(enabled)
     elif ext_id in st["custom"]:
         st["custom"][ext_id]["enabled"] = bool(enabled)

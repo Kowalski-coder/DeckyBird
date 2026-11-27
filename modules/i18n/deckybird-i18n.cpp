@@ -17,7 +17,7 @@ static const TransEntry kTranslations[] = {
     {"Stop", "Остановить"},
     {"View Page Source", "Исходный код страницы"},
     {"Inspect Element", "Исследовать элемент"},
-    {"Inspect", "Инспектор"},
+    {"Inspect", "Инструменты разработчика"},
     {"Take Screenshot...", "Сделать снимок экрана…"},
     {"Take Screenshot…", "Сделать снимок экрана…"},
     {"Report Website Issue...", "Сообщить о проблеме сайта…"},

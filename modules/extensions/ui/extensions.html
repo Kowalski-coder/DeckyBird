@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Расширения — DeckyBird</title>
+  <title>Расширения DeckyBird</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body {
@@ -14,13 +14,21 @@
       display: flex;
       justify-content: center;
     }
-    .wrap { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 20px; }
+    .wrap { width: 100%; max-width: 880px; display: flex; flex-direction: column; gap: 18px; }
     .topbar {
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
       background: #161920; border: 1px solid #282f3d; border-radius: 16px; padding: 18px 20px;
     }
     .title-group h1 { font-size: 20px; font-weight: 700; color: #f9fafb; }
     .title-group p { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+    .tabs {
+      display: flex; gap: 8px; background: #161920; padding: 6px; border-radius: 12px; border: 1px solid #282f3d;
+    }
+    .tab-btn {
+      flex: 1; background: transparent; border: none; color: #94a3b8; padding: 10px 14px;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
+    }
+    .tab-btn.active { background: #00acff; color: #fff; }
     .toggle {
       position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600;
     }
@@ -34,7 +42,6 @@
     }
     .toggle input:checked + .slider { background: #00acff; }
     .toggle input:checked + .slider::after { transform: translateX(20px); }
-    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
     .ext-card {
       background: #161920; border: 1px solid #282f3d; border-radius: 14px; padding: 16px;
@@ -44,38 +51,40 @@
     .ext-name { font-size: 15px; font-weight: 700; color: #f9fafb; }
     .ext-meta { font-size: 11px; color: #00acff; margin-top: 2px; }
     .ext-desc { font-size: 12px; color: #9ca3af; line-height: 1.4; }
-    .ext-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #232936; }
+    .ext-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #232936; flex-wrap: wrap; }
     .stat-badge { font-size: 11px; color: #93c5fd; background: rgba(0, 172, 255, 0.1); padding: 4px 9px; border-radius: 999px; }
     .btn {
-      border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+      border: none; border-radius: 8px; padding: 8px 13px; font-size: 12px; font-weight: 600; cursor: pointer;
       background: #283142; color: #e5e7eb; transition: 0.15s;
     }
     .btn:hover { background: #333e54; }
-    .btn-primary { background: #00acff; color: #fff; }
-    .btn-primary:hover { background: #0095de; }
+    .btn-primary { background: linear-gradient(135deg, #00acff 0%, #0077cc 100%); color: #fff; }
     .btn-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
-    .install-box {
-      background: #161920; border: 1px solid #282f3d; border-radius: 14px; padding: 18px;
-      display: flex; flex-direction: column; gap: 12px;
+    .us-toolbar {
+      background: #161920; border: 1px solid #282f3d; border-radius: 14px; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
     }
+    .us-top-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .us-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .install-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .install-row input[type="text"] {
       flex: 1; min-width: 240px; background: #202633; border: 1px solid #333d4f; border-radius: 8px;
-      padding: 10px 12px; color: #f3f4f6; font-size: 13px; outline: none;
+      padding: 9px 12px; color: #f3f4f6; font-size: 13px; outline: none;
     }
     .install-row input[type="text"]:focus { border-color: #00acff; }
     .status-msg { font-size: 12px; color: #93c5fd; display: none; }
     .status-msg.err { color: #fca5a5; }
     .modal-bg {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
     }
     .modal {
-      width: 100%; max-width: 480px; background: #161920; border: 1px solid #333d4f; border-radius: 14px; padding: 20px;
-      display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto;
+      width: 100%; max-width: 520px; background: #161920; border: 1px solid #333d4f; border-radius: 14px; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px; max-height: 88vh; overflow-y: auto;
     }
+    .modal.wide { max-width: 720px; }
     .modal h2 { font-size: 16px; color: #f9fafb; }
     textarea {
-      width: 100%; min-height: 130px; background: #202633; border: 1px solid #333d4f; border-radius: 8px;
+      width: 100%; min-height: 220px; background: #202633; border: 1px solid #333d4f; border-radius: 8px;
       padding: 10px; color: #f3f4f6; font-family: monospace; font-size: 12px; resize: vertical;
     }
     .pb-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #232936; font-size: 12px; }
@@ -86,32 +95,43 @@
   <div class="wrap">
     <div class="topbar">
       <div class="title-group">
-        <h1>Расширения DeckyBird (бета)</h1>
-        <p>Встроенные модули приватности, перевод видео и установка .crx / .xpi / .user.js</p>
+        <h1>Расширения DeckyBird</h1>
+        <p>Встроенные модули приватности, перевод видео и менеджер пользовательских скриптов</p>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="mitm-toggle">
-        <span class="slider"></span>
-        <span id="mitm-label">Активно</span>
-      </label>
     </div>
 
-    <div class="section-title">Встроенные расширения</div>
-    <div class="grid" id="builtins-grid"></div>
-
-    <div class="section-title">Установить из Chrome Web Store / Firefox Add-ons / Userscript</div>
-    <div class="install-box">
-      <div class="install-row">
-        <input type="text" id="install-url" placeholder="Вставьте ссылку Chrome Web Store, addons.mozilla.org, .user.js или ID...">
-        <button class="btn btn-primary" id="btn-install-url">Установить</button>
-        <button class="btn" id="btn-upload-file">Загрузить файл (.crx / .xpi / .user.js)</button>
-        <input type="file" id="file-upload" accept=".crx,.xpi,.zip,.js" style="display:none">
-      </div>
-      <div class="status-msg" id="install-status"></div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-builtins">Встроенные расширения</button>
+      <button class="tab-btn" id="tab-scripts">Пользовательские скрипты (бета)</button>
     </div>
 
-    <div class="section-title">Установленные расширения</div>
-    <div class="grid" id="custom-grid"></div>
+    <div id="section-builtins">
+      <div class="grid" id="builtins-grid"></div>
+    </div>
+
+    <div id="section-scripts" style="display:none;">
+      <div class="us-toolbar">
+        <div class="us-top-row">
+          <label class="toggle">
+            <input type="checkbox" id="autoupdate-toggle">
+            <span class="slider"></span>
+            <span>Автообновление скриптов</span>
+          </label>
+          <div class="us-actions">
+            <button class="btn" id="btn-check-updates">Проверить обновления</button>
+            <button class="btn btn-primary" id="btn-new-script">+ Новый скрипт</button>
+          </div>
+        </div>
+        <div class="install-row">
+          <input type="text" id="script-url" placeholder="Вставьте прямую ссылку на .user.js (GitHub, GreasyFork и т.д.)...">
+          <button class="btn btn-primary" id="btn-install-url">Установить</button>
+          <button class="btn" id="btn-upload-file">Загрузить .user.js</button>
+          <input type="file" id="file-upload" accept=".js" style="display:none">
+        </div>
+        <div class="status-msg" id="us-status"></div>
+      </div>
+      <div class="grid" id="scripts-grid"></div>
+    </div>
   </div>
 
   <div class="modal-bg" id="modal-bg">
@@ -120,41 +140,59 @@
 
   <script>
     const builtinsGrid = document.getElementById("builtins-grid");
-    const customGrid = document.getElementById("custom-grid");
-    const mitmToggle = document.getElementById("mitm-toggle");
-    const mitmLabel = document.getElementById("mitm-label");
-    const installUrl = document.getElementById("install-url");
+    const scriptsGrid = document.getElementById("scripts-grid");
+    const tabBuiltins = document.getElementById("tab-builtins");
+    const tabScripts = document.getElementById("tab-scripts");
+    const sectionBuiltins = document.getElementById("section-builtins");
+    const sectionScripts = document.getElementById("section-scripts");
+    const autoupdateToggle = document.getElementById("autoupdate-toggle");
+    const btnCheckUpdates = document.getElementById("btn-check-updates");
+    const btnNewScript = document.getElementById("btn-new-script");
+    const scriptUrlInput = document.getElementById("script-url");
     const btnInstallUrl = document.getElementById("btn-install-url");
     const btnUploadFile = document.getElementById("btn-upload-file");
     const fileUpload = document.getElementById("file-upload");
-    const installStatus = document.getElementById("install-status");
+    const usStatus = document.getElementById("us-status");
     const modalBg = document.getElementById("modal-bg");
     const modalBody = document.getElementById("modal-body");
 
     let currentState = null;
 
+    function switchTab(tab) {
+      tabBuiltins.classList.toggle("active", tab === "builtins");
+      tabScripts.classList.toggle("active", tab === "scripts");
+      sectionBuiltins.style.display = tab === "builtins" ? "block" : "none";
+      sectionScripts.style.display = tab === "scripts" ? "block" : "none";
+    }
+    tabBuiltins.onclick = () => switchTab("builtins");
+    tabScripts.onclick = () => switchTab("scripts");
+
     function showStatus(msg, isErr = false) {
-      installStatus.textContent = msg;
-      installStatus.classList.toggle("err", isErr);
-      installStatus.style.display = "block";
+      usStatus.textContent = msg;
+      usStatus.classList.toggle("err", isErr);
+      usStatus.style.display = "block";
     }
 
     async function loadState() {
       const res = await fetch("/api/ext/state");
       currentState = await res.json();
-      mitmToggle.checked = !!currentState.mitm_enabled;
-      mitmLabel.textContent = currentState.mitm_enabled ? "Движок включён" : "Движок выключен";
+      autoupdateToggle.checked = currentState.autoupdate_enabled !== false;
       render();
     }
 
-    mitmToggle.addEventListener("change", async () => {
-      await fetch("/api/ext/toggle", {
+    autoupdateToggle.addEventListener("change", async () => {
+      await fetch("/api/ext/autoupdate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: "__mitm__", enabled: mitmToggle.checked })
+        body: JSON.stringify({ enabled: autoupdateToggle.checked })
       });
       loadState();
     });
+
+    function formatDate(ts) {
+      if (!ts) return "не проверялось";
+      return new Date(ts * 1000).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
 
     function render() {
       builtinsGrid.innerHTML = "";
@@ -201,58 +239,186 @@
         builtinsGrid.appendChild(card);
       }
 
-      customGrid.innerHTML = "";
-      const customs = Object.values(currentState.custom || {});
-      if (!customs.length) {
-        customGrid.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Нет дополнительно установленных расширений.</div>';
+      scriptsGrid.innerHTML = "";
+      const scripts = Object.values(currentState.custom || {}).filter(s => s.kind === "userscript");
+      if (!scripts.length) {
+        scriptsGrid.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Пользовательские скрипты не добавлены.</div>';
         return;
       }
-      for (const ext of customs) {
+      for (const sc of scripts) {
         const card = document.createElement("div");
         card.className = "ext-card";
-        const popupBtn = ext.popup_path
-          ? `<a class="btn btn-primary" href="/ext-res/${encodeURIComponent(ext.id)}/${ext.popup_path.replace(/^\/+/, "")}" target="_blank" style="text-decoration:none;">Popup</a>`
-          : "";
+        const hasUpdateUrl = !!(sc.update_url || sc.download_url || sc.source_url);
         card.innerHTML = `
           <div class="ext-head">
             <div>
               <div class="ext-name"></div>
-              <div class="ext-meta">${ext.source.toUpperCase()} • v${ext.version}</div>
+              <div class="ext-meta">v${sc.version}${sc.author ? " • " + sc.author : ""} • проверка: ${formatDate(sc.last_checked)}</div>
             </div>
             <label class="toggle">
-              <input type="checkbox" ${ext.enabled ? "checked" : ""}>
+              <input type="checkbox" ${sc.enabled ? "checked" : ""}>
               <span class="slider"></span>
             </label>
           </div>
           <div class="ext-desc"></div>
           <div class="ext-foot">
-            <div style="display:flex;gap:6px;">${popupBtn}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-edit">Редактировать</button>
+              ${hasUpdateUrl ? '<button class="btn btn-upd">Обновить</button>' : ""}
+            </div>
             <button class="btn btn-danger">Удалить</button>
           </div>
         `;
-        card.querySelector(".ext-name").textContent = ext.name;
-        card.querySelector(".ext-desc").textContent = ext.description || "Пользовательское расширение";
+        card.querySelector(".ext-name").textContent = sc.name;
+        card.querySelector(".ext-desc").textContent = sc.description || "Пользовательский скрипт";
         card.querySelector("input").addEventListener("change", async (e) => {
           await fetch("/api/ext/toggle", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: ext.id, enabled: e.target.checked })
+            body: JSON.stringify({ id: sc.id, enabled: e.target.checked })
           });
           loadState();
         });
-        card.querySelector(".btn-danger").addEventListener("click", async () => {
+        card.querySelector(".btn-edit").onclick = async () => {
+          const r = await fetch(`/ext-res/${encodeURIComponent(sc.id)}/${sc.userscript_file || "script.user.js"}`);
+          const code = await r.text();
+          openScriptEditor(sc.id, code, sc.source_url || "");
+        };
+        const updBtn = card.querySelector(".btn-upd");
+        if (updBtn) {
+          updBtn.onclick = async () => {
+            showStatus(`Проверка обновления: ${sc.name}...`);
+            const res = await fetch("/api/ext/check-updates", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: sc.id })
+            });
+            const d = await res.json();
+            if (d.updated && d.updated.length) {
+              showStatus(`Обновлено до v${d.updated[0].version}`);
+            } else {
+              showStatus(`Скрипт «${sc.name}» уже актуален`);
+            }
+            loadState();
+          };
+        }
+        card.querySelector(".btn-danger").onclick = async () => {
           await fetch("/api/ext/remove", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: ext.id })
+            body: JSON.stringify({ id: sc.id })
           });
           loadState();
-        });
-        customGrid.appendChild(card);
+        };
+        scriptsGrid.appendChild(card);
       }
     }
 
+    function openScriptEditor(scriptId, initialCode, sourceUrl = "") {
+      modalBody.className = "modal wide";
+      modalBody.innerHTML = "";
+      const h = document.createElement("h2");
+      h.textContent = scriptId ? "Редактировать скрипт" : "Новый пользовательский скрипт";
+      const ta = document.createElement("textarea");
+      ta.value = initialCode || `// ==UserScript==\n// @name         Мой скрипт\n// @version      1.0\n// @description  Описание скрипта\n// @match        *://*/*\n// @run-at       document-end\n// ==/UserScript==\n\n(() => {\n  console.log("DeckyBird userscript active");\n})();\n`;
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
+      const saveBtn = document.createElement("button");
+      saveBtn.className = "btn btn-primary";
+      saveBtn.textContent = "Сохранить";
+      saveBtn.onclick = async () => {
+        const res = await fetch("/api/ext/save-script", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: scriptId || "", code: ta.value, source_url: sourceUrl })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          modalBg.style.display = "none";
+          showStatus(`Сохранено: ${d.extension.name}`);
+          loadState();
+        } else {
+          alert(d.error || "Ошибка сохранения");
+        }
+      };
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "btn";
+      cancelBtn.textContent = "Отмена";
+      cancelBtn.onclick = () => { modalBg.style.display = "none"; };
+      row.append(cancelBtn, saveBtn);
+      modalBody.append(h, ta, row);
+      modalBg.style.display = "flex";
+    }
+
+    btnNewScript.onclick = () => openScriptEditor("", "");
+
+    btnCheckUpdates.onclick = async () => {
+      showStatus("Проверка обновлений всех скриптов...");
+      const res = await fetch("/api/ext/check-updates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const d = await res.json();
+      if (d.updated && d.updated.length) {
+        showStatus(`Обновлено скриптов: ${d.updated.length}`);
+      } else {
+        showStatus(`Проверено: ${d.checked || 0}. Новых версий нет.`);
+      }
+      loadState();
+    };
+
+    btnInstallUrl.onclick = async () => {
+      const val = scriptUrlInput.value.trim();
+      if (!val) return;
+      showStatus("Загрузка скрипта...");
+      btnInstallUrl.disabled = true;
+      try {
+        const res = await fetch("/api/ext/install-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: val })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showStatus(`Установлено: ${d.extension.name} (v${d.extension.version})`);
+          scriptUrlInput.value = "";
+          loadState();
+        } else {
+          showStatus(d.error || "Ошибка загрузки", true);
+        }
+      } catch (e) {
+        showStatus("Ошибка: " + e.message, true);
+      } finally {
+        btnInstallUrl.disabled = false;
+      }
+    };
+
+    btnUploadFile.onclick = () => fileUpload.click();
+    fileUpload.onchange = (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const b64 = ev.target.result.split(",")[1];
+        const res = await fetch("/api/ext/install-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: f.name, data_b64: b64 })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showStatus(`Установлено: ${d.extension.name}`);
+          loadState();
+        } else {
+          showStatus(d.error || "Ошибка установки", true);
+        }
+      };
+      reader.readAsDataURL(f);
+    };
+
     function openBuiltinSettings(id, ext) {
+      modalBody.className = "modal";
       modalBody.innerHTML = "";
       const title = document.createElement("h2");
       title.textContent = `Настройки: ${ext.name}`;
@@ -263,6 +429,7 @@
         p.style.cssText = "font-size:12px;color:#94a3b8;";
         p.textContent = "Дополнительные домены для блокировки (по одному на строку):";
         const ta = document.createElement("textarea");
+        ta.style.minHeight = "140px";
         ta.value = (ext.custom_rules || []).join("\n");
         const saveBtn = document.createElement("button");
         saveBtn.className = "btn btn-primary";
@@ -345,56 +512,6 @@
 
     modalBg.addEventListener("click", (e) => {
       if (e.target === modalBg) modalBg.style.display = "none";
-    });
-
-    btnInstallUrl.addEventListener("click", async () => {
-      const val = installUrl.value.trim();
-      if (!val) return;
-      showStatus("Скачивание и установка...");
-      btnInstallUrl.disabled = true;
-      try {
-        const res = await fetch("/api/ext/install-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: val })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          showStatus(`Установлено: ${data.extension.name}`);
-          installUrl.value = "";
-          loadState();
-        } else {
-          showStatus(data.error || "Ошибка установки", true);
-        }
-      } catch (e) {
-        showStatus("Ошибка: " + e.message, true);
-      } finally {
-        btnInstallUrl.disabled = false;
-      }
-    });
-
-    btnUploadFile.addEventListener("click", () => fileUpload.click());
-    fileUpload.addEventListener("change", (e) => {
-      const f = e.target.files[0];
-      if (!f) return;
-      showStatus("Установка файла...");
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const b64 = ev.target.result.split(",")[1];
-        const res = await fetch("/api/ext/install-file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: f.name, data_b64: b64 })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          showStatus(`Установлено: ${data.extension.name}`);
-          loadState();
-        } else {
-          showStatus(data.error || "Ошибка установки", true);
-        }
-      };
-      reader.readAsDataURL(f);
     });
 
     loadState();

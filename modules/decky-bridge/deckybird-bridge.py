@@ -327,16 +327,6 @@ class ControlHandler(BaseHTTPRequestHandler):
                 ctype, _ = mimetypes.guess_type(target)
                 with open(target, "rb") as f:
                     raw = f.read()
-                if (ctype or "").startswith("text/html"):
-                    poly = ext_mgr._read_builtin_text("webext_polyfill.js")
-                    st = ext_mgr.load_state().get("custom", {}).get(safe_id, {})
-                    manifest_json = json.dumps(st.get("manifest", {}))
-                    inj = (
-                        f"<script>{poly}\n"
-                        f"window.chrome=window.__deckyCreateWebExtAPI({json.dumps(safe_id)},{manifest_json});"
-                        f"window.browser=window.chrome;</script>"
-                    ).encode("utf-8")
-                    raw = inj + raw
                 self._send_bytes(200, ctype or "application/octet-stream", raw)
             else:
                 self._send_json(404, {"ok": False, "error": "not_found"})
@@ -402,6 +392,27 @@ class ControlHandler(BaseHTTPRequestHandler):
             except Exception as ex:
                 res = {"ok": False, "error": str(ex)}
             self._send_json(200, res)
+        elif path == "/api/ext/save-script":
+            body = self._read_json_body()
+            try:
+                res = ext_mgr.save_userscript_code(
+                    code=body.get("code", ""),
+                    script_id=body.get("id", ""),
+                    source_url=body.get("source_url", ""),
+                )
+            except Exception as ex:
+                res = {"ok": False, "error": str(ex)}
+            self._send_json(200, res)
+        elif path == "/api/ext/check-updates":
+            body = self._read_json_body()
+            try:
+                res = ext_mgr.check_userscript_updates(script_id=body.get("id", ""))
+            except Exception as ex:
+                res = {"ok": False, "error": str(ex)}
+            self._send_json(200, res)
+        elif path == "/api/ext/autoupdate":
+            body = self._read_json_body()
+            self._send_json(200, ext_mgr.set_autoupdate(body.get("enabled", True)))
         elif path == "/api/ext/install-file":
             body = self._read_json_body()
             try:
@@ -506,8 +517,7 @@ class SelectiveProxyHandler(BaseHTTPRequestHandler):
         host, _, port_str = self.path.partition(":")
         port = int(port_str or "443")
 
-        mitm_active = ext_mgr.load_state().get("mitm_enabled", True)
-        if (host.lower() not in TARGET_HOSTS and not mitm_active) or port != 443:
+        if port != 443:
             try:
                 remote = socket.create_connection((host, port), timeout=15)
             except Exception as ex:
@@ -703,6 +713,7 @@ def main():
 
     global PAGE_SCRIPT_JS
     PAGE_SCRIPT_JS = find_page_script()
+    ext_mgr.start_autoupdate_loop()
 
     ctrl_server = ThreadingHTTPServer(("127.0.0.1", CONTROL_PORT), ControlHandler)
     proxy_server = ThreadingHTTPServer(("127.0.0.1", PROXY_PORT), SelectiveProxyHandler)
